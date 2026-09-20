@@ -34,8 +34,8 @@ npm run build     # tsc 类型检查 + vite 打包
 
 构建产物写到 `source/dist/fanqie-assistant-lite.user.js`。
 
-发布流程：构建完成后**手工复制**到顶层 `release/fanqie-assistant-v0.1.0.user.js`。  
-v0.1.0 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发布物同名不同源。
+发布流程：构建完成后**手工复制**到顶层 `release/fanqie-assistant-v0.1.x.user.js`。  
+v0.1.x 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发布物同名不同源。
 
 ### 修改 metadata
 

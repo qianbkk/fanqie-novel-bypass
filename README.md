@@ -31,7 +31,7 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 Violentmonkey。
-2. 打开 [`release/fanqie-assistant-v0.1.0.user.js`](release/fanqie-assistant-v0.1.0.user.js)，脚本管理器会自动弹出安装页。
+2. 打开 [`release/fanqie-assistant-v0.1.1.user.js`](release/fanqie-assistant-v0.1.1.user.js)，脚本管理器会自动弹出安装页。
 3. 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
@@ -43,7 +43,7 @@
 |------|------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 6 层反封禁防线详解 + 各模块源码位置 |
 | [docs/DESIGN.md](docs/DESIGN.md) | 设计原则（不自残 / 不存签名凭据 / 不上报）+ 取舍记录 |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | v0.1.0 vs v0.0.6 的差异、Lite 版历史 |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | v0.1.1 vs v0.1.0 vs v0.0.6 的差异、Lite 版历史 |
 | [release/INSTALL.md](release/INSTALL.md) | 安装 + 故障排查 + 已知限制 |
 
 ## 仓库结构
@@ -71,7 +71,7 @@ fanqie-novel-bypass/
 │   ├── vite.config.ts
 │   └── README.md            # 源码目录自己的开发说明
 └── release/                 # 用户直接安装的产物
-    ├── fanqie-assistant-v0.1.0.user.js   # 本版本（推荐）
+    ├── fanqie-assistant-v0.1.1.user.js   # 本版本（推荐）
     ├── fanqie-assistant-v0.0.6.user.js   # 上游原始（fallback）
     └── INSTALL.md
 ```
@@ -93,7 +93,7 @@ npm install
 npm run build     # 类型检查 + 打包 → source/dist/fanqie-assistant-lite.user.js
 ```
 
-构建产物会再被手工复制到 `release/fanqie-assistant-v0.1.0.user.js`。修改 `vite.config.ts` 调整 `@name` / `@description` / `@author`，修改 `package.json` 调整版本号。
+构建产物会再被手工复制到 `release/fanqie-assistant-v0.1.1.user.js`。修改 `vite.config.ts` 调整 `@name` / `@description` / `@author`，修改 `package.json` 调整版本号。
 
 ## 许可
 

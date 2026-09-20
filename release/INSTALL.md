@@ -4,7 +4,8 @@
 
 | 文件 | 大小 | 何时用 |
 |------|------|--------|
-| **`fanqie-assistant-v0.1.0.user.js`** | **267 KB** | **默认推荐**。本 fork 完整版，含反封禁 6 层防线 + 设备池 + Pin + 控制面板。 |
+| **`fanqie-assistant-v0.1.1.user.js`** | **267 KB** | **默认推荐**。本 fork 完整版，含反封禁 6 层防线 + 设备池 + Pin + 控制面板。控制面板挂载 bug 已修复。 |
+| `fanqie-assistant-v0.1.0.user.js` | 267 KB | ⚠️ 已知 bug：document-start 时 `mountPanel()` 抛错（body 不存在），导致 ⚙️ 控制面板看不到，且设备池 / 缓存实际未初始化。**不要装这个版本**。如果已经装了，请卸载并装 v0.1.1。 |
 | `fanqie-assistant-v0.0.6.user.js` | 490 KB | 上游原始全功能版。**仅当**你需要书架 / 搜索 / 下载 / 听书 / 评论这些本 fork 精简策略不包含的功能时用。 |
 
 两个文件**不要同时装** —— 同时启用会重复注入。
@@ -12,7 +13,7 @@
 ## 安装步骤
 
 1. 安装脚本管理器：[Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 [Violentmonkey](https://violentmonkey.github.io/)。
-2. 用浏览器打开 `fanqie-assistant-v0.1.0.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
+2. 用浏览器打开 `fanqie-assistant-v0.1.1.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
 3. 脚本管理器弹出安装页 → 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 

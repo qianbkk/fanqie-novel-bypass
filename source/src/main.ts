@@ -23,7 +23,7 @@ import { version, name } from '../package.json'
 import { initLogger, info } from './utils/logger'
 import { initCache } from './cache'
 import { initPool } from './pool'
-import { mountPanel } from './panel'
+import { mountPanel, ensurePanelButton } from './panel'
 import { mountRecoveryUI } from './panel/recovery'
 
 const win = unsafeWindow
@@ -70,26 +70,42 @@ async function mainInit() {
     // 3. 导航钩子
     installNavigationHooks()
 
-    // 4. 触发 enter 钩子（readerHook 会接管页面）
+    // 4. 触发 enter 钩子（readerHook 会接管页面）—— document-start 就跑
     void onEnter()
 
-    // 5. UI 模块
+    // 5. 早期 UI 模块（不依赖 body）
     initFontDecrypt()
     void injectCSS()
     initUserStyle()
-    mountPanel()
     mountRecoveryUI()
 
-    // 6. 异步初始化：缓存 + 设备池（并行）
+    // 6. 等待 body 可用（document-start 时 body 还不存在，不能直接挂 ⚙️）
+    await whenBodyReady()
+
+    // 7. 挂 ⚙️（此时 body 已就绪）
+    mountPanel()
+
+    // 8. 异步初始化：缓存 + 设备池（并行）
     await Promise.allSettled([
         initCache().catch((e) => console.error('[fqa:main] initCache failed:', e)),
         initPool().catch((e) => console.error('[fqa:main] initPool failed:', e)),
     ])
 
-    // 7. load 钩子（页面已有内容时触发）
+    // 9. load 钩子（页面已有内容时触发）+ 自愈检查
     void onLoad()
+    ensurePanelButton()
 
     info('main', '主流程初始化完成')
+}
+
+function whenBodyReady(): Promise<void> {
+    return new Promise((resolve) => {
+        if (document.body) {
+            resolve()
+            return
+        }
+        document.addEventListener('DOMContentLoaded', () => resolve(), { once: true })
+    })
 }
 
 mainInit()

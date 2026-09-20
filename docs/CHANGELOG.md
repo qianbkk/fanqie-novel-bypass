@@ -1,6 +1,35 @@
 # 版本变更
 
-## v0.1.0 (2026-09-20) — 本次发布
+## v0.1.1 (2026-09-20) — 控制面板挂载 bug 修复
+
+**Bug**：v0.1.0 在 `document-start` 时调用 `mountPanel()`，但此时 `document.body` 还不存在，导致 `document.body.appendChild()` 抛错。结果：
+- ⚙️ 控制面板看不到
+- `mountRecoveryUI()` 没跑（失败恢复弹窗失效）
+- `await Promise.allSettled([initCache, initPool])` 跳过 → **设备池、缓存实际未初始化**
+
+**用户报告**（1 小时连续阅读）：
+- ✅ 阅读解锁链路正常（readerHook 在 mountPanel 之前已跑）
+- ❌ ⚙️ 不显示
+- ⚠️ 设备池 0 槽、缓存未启用（潜在风控风险）
+
+**修复**：
+- `panel/index.ts`：`mountPanel()` 加 body 存在性保护；新增 `attachTriggerButton()` + `ensurePanelButton()`，便于自愈
+- `main.ts`：把 `mountPanel()` 调用移到 `await whenBodyReady()` 之后；readerHook / onEnter 仍在 document-start 跑（不依赖 body）
+- `hooks/index.ts`：`onUrlChange` / `onHashChange` / `onLoad` 触发时调 `ensurePanelButton()`，防 SPA 路由切换清掉 ⚙️
+- 版本号 0.1.0 → 0.1.1
+
+**升级（修复版）**：
+- 卸载旧版（v0.1.0）
+- 安装 `release/fanqie-assistant-v0.1.1.user.js`
+- 刷新页面，应在右下角看到 ⚙️
+
+**仍在 v0.1.1 已知未修**：
+- 未在真实 Tampermonkey 实例验证（chrome-devtools 沙箱无 GM_* API，无法本地测试）
+- 长周期（1–3 天）压测仍依赖用户报告
+
+---
+
+## v0.1.0 (2026-09-20) — 首次发布
 
 **定位**：在 [naiyQAQ/fanqie-assistant](https://github.com/naiyQAQ/fanqie-assistant) v0.0.6 基础上的自用 fork。重点补齐 L1–L6 反封禁防线、设备池、Pin 缓存、浮动控制面板。
 

@@ -1,6 +1,7 @@
 import type { HookConfig, HookEvent } from "../config";
 import readerHook from "./readerHook";
 import fetchHook from "./fetchHook";
+import { ensurePanelButton } from "../panel";
 
 // 精简版: 仅保留阅读页解锁 + 屏蔽埋点
 // 删除: bookshelfHook(书架), searchHook(搜索), userHook(用户菜单), downloadHook(下载)
@@ -31,14 +32,18 @@ async function onEvent(event: HookEvent, previous?: string) {
 }
 
 export async function onUrlChange(previous: string) {
+    // SPA 路由切换可能清掉 ⚙️ 按钮，先确保面板在 DOM 里
+    ensurePanelButton()
     return await onEvent('onUrlChange', previous);
 }
 
 export async function onHashChange(previous: string) {
+    ensurePanelButton()
     return await onEvent('onHashChange', previous);
 }
 
 export async function onLoad() {
+    ensurePanelButton()
     return await onEvent('load');
 }
 

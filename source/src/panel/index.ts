@@ -46,6 +46,17 @@ export function mountPanel(): void {
     if (mounted) return
     mounted = true
     injectStyles()
+    attachTriggerButton()
+
+    unsubs.push(pool.subscribe(scheduleRefresh))
+    unsubs.push(subscribeLogger(scheduleRefresh))
+    info('panel', `控制面板已挂载（模式: ${mode}）`)
+}
+
+// 把"创建 + 挂 ⚙️ 按钮"抽出来，供 ensurePanelButton() 重复调用（SPA 路由切换会删 DOM）
+function attachTriggerButton(): void {
+    if (!document.body) return
+    if (document.getElementById(PANEL_ID)) return  // 已存在不重复挂
     const button = document.createElement('button')
     button.id = PANEL_ID
     button.className = 'fqa-control-trigger'
@@ -53,10 +64,12 @@ export function mountPanel(): void {
     button.textContent = '⚙️'
     button.addEventListener('click', toggleMode)
     document.body.appendChild(button)
+}
 
-    unsubs.push(pool.subscribe(scheduleRefresh))
-    unsubs.push(subscribeLogger(scheduleRefresh))
-    info('panel', `控制面板已挂载（模式: ${mode}）`)
+// 自愈：SPA 路由切换可能清掉 ⚙️，调用一次确保按钮在 DOM 里
+export function ensurePanelButton(): void {
+    if (!mounted) return  // mountPanel 还没跑过就不管
+    attachTriggerButton()
 }
 
 export function unmountPanel(): void {
