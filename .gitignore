@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output (release/ holds the canonical artifacts)
+source/dist/
+*.tsbuildinfo
+
+# nested git repo from upstream fork — renamed so git won't treat source/ as an embedded repo
+source/_git_backup/
+source/.gitignore
+
+# logs and runtime
+*.log
+npm-debug.log*
+logs/
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# user-specific scratch
+*.local
+.env*
+temp/
+test/

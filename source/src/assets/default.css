@@ -1,0 +1,167 @@
+/* 
+ * 番茄小说APP内置CSS
+ * 版权归属为番茄小说APP官方
+ * 修改以兼容网页环境
+ *
+ * line-space / theme-color 是 APP 排版引擎的私有属性，浏览器和 EPUB 阅读器都不认，
+ * 已注释保留以便和原始样式对照。theme-color 的值 color1#0.7 还会让 CSS 解析器跑偏，
+ * 把后面几条声明一起吃掉，必须注释而不能留着。
+ */
+
+html{
+    display:block;
+}
+
+body{
+    display:block;
+}
+
+p{
+    font-size:1em;
+    text-align:justify;
+    display:block;
+    text-indent:2em;
+    margin:0.6em 0em 0.6em 0em;
+}
+
+div{
+    display:block;
+}
+
+h1{
+    display:block;
+    font-size:1.42em;
+    font-weight:bold;
+    margin:22px 0em 3em 0em;
+    text-align:left;
+    /* line-space:0.5em; */
+}
+
+h2{
+    display:block;
+    font-size:1.2em;
+    font-weight:bold;
+    margin:1em 0em 0.6em 0em;
+    text-align:left;
+}
+
+h3{
+    display:block;
+    font-size:1em;
+    font-weight:bold;
+    margin:0em 0em 1em 0em;
+    text-align:left;
+}
+
+sup{
+    font-size:smaller;
+}
+
+.picture{
+    text-indent:0em;
+    text-align:center;
+    margin:0em 0em 0em 0em;
+    /* line-space:0em; */
+}
+
+.pictureDesc{
+    font-size:0.73em;
+    text-indent:0em;
+    margin:0.4em 0em 1em 0em;
+    /* theme-color:color1#0.7; */
+    /* line-space:0.3em; */
+    text-align:left;
+}
+
+.pictureTitle{
+    font-size:0.73em;
+    text-indent:0em;
+    margin:1em 0em 0.3em 0em;
+    /* theme-color:color1#0.7; */
+    text-align:left;
+    /* line-space:0em; */
+}
+
+.collectTitle{
+    margin:80px 68px 0em 0px;
+    font-size:1.42em;
+    text-indent:0em;
+    text-align:left;
+}
+
+.collectAuthor{
+    margin:16px 0em 0em 0em;
+    font-size:1em;
+    text-indent:0em;
+    text-align:left;
+}
+
+.collectPicture{
+    margin:24px 0em 0em 0em;
+    text-indent:0em;
+    text-align:right;
+}
+
+.collectDetail{
+    margin:3em 44px 0em 10px;
+    text-indent:0em;
+}
+
+.quoteDefault{
+    font-size:1em;
+    margin:1.5em 0em 1.5em 2em;
+    font-family:'FZShengShiKaiShuS-M-GB';
+    /* line-space:0.5em; */
+}
+
+.quoteStyle1{
+    text-indent:0em;
+    text-align:left;
+}
+
+.alignRight{
+    text-align:right;
+}
+
+.quoteDefaultAlignRight{
+    font-size:1em;
+    margin:0.6em 0em 1.5em 32px;
+    font-family:'FZShengShiKaiShuS-M-GB';
+    text-align:right;
+    /* line-space:0.5em; */
+}
+.chapterTitle1{
+    display:block;
+    font-size:1.42em;
+    font-weight:bold;
+    margin:22px 0em 3em 0em;
+    text-align:left;
+    /* line-space:0.5em; */
+}
+
+.chapterTitle2{
+    display:block;
+    font-size:1.2em;
+    font-weight:bold;
+    margin:1em 0em 0.6em 0em;
+    text-align:left;
+}
+
+.chapterTitle3{
+    display:block;
+    font-size:1em;
+    font-weight:bold;
+    margin:0em 0em 1em 0em;
+    text-align:left;
+}
+
+.bdFootnote{
+    width:0.69em;
+    height:0.84em;
+    margin-top:-0.23em;
+    vertical-align:top;
+}
+
+.bdPicturebg{
+    break-before:always;
+}

@@ -1,0 +1,240 @@
+/* 移除章节锁定图标 */
+.muyeicon-lock {
+	display: none;
+}
+/* 移除APP推广图标 */
+.muye-to-fanqie {
+	display: none!important;
+}
+.reader-toolbar-item-download {
+	display: none!important;
+}
+.download-btn {
+	display: none!important;
+}
+.download-icon {
+	display: none!important;
+}
+
+.fqa-hide {
+	display: none!important;
+}
+/* 404 */
+.no-content {
+	display: none!important;
+}
+
+.fqa-comic-img {
+	width: 100%!important;
+	height: 100%!important;
+	max-width: 100%!important;
+	max-height: 100%!important;
+	padding-top: 0!important;
+	padding-bottom: 0!important;
+	margin-top: 0!important;
+	margin-bottom: 0!important;
+}
+
+.fqa-comic-reader {
+	line-height: 0!important;
+}
+
+.fqa-menu-item,
+.arco-menu-item {
+	width: 100%!important;
+}
+
+#dynamic-el {
+	display: none!important;
+}
+
+.fqa-footnote-ref {
+	display: inline-block;
+	margin: 0 0.15em;
+	padding: 0 0.25em;
+	font-size: 0.7em;
+	line-height: 1.4;
+	vertical-align: super;
+	color: var(--web-brand_normal, #f14646);
+	cursor: pointer;
+	user-select: none;
+	border-radius: 3px;
+	text-indent: 0;
+}
+
+.fqa-footnote-ref:hover,
+.fqa-footnote-ref:focus-visible {
+	background: var(--web-brand_light, rgba(241, 70, 70, 0.12));
+	outline: none;
+}
+
+
+.fqa-footnote {
+	margin-top: 2em;
+	padding-top: 1em;
+	border-top: 1px solid var(--web-gray_20, rgba(128, 128, 128, 0.25));
+	font-size: var(--fqa-body-size, 1.6rem);
+}
+
+.muye-reader-content-16 .fqa-footnote { font-size: var(--fqa-body-size, 1.6rem); }
+.muye-reader-content-20 .fqa-footnote { font-size: var(--fqa-body-size, 2rem); }
+.muye-reader-content-24 .fqa-footnote { font-size: var(--fqa-body-size, 2.4rem); }
+.muye-reader-content-28 .fqa-footnote { font-size: var(--fqa-body-size, 2.8rem); }
+.muye-reader-content-32 .fqa-footnote { font-size: var(--fqa-body-size, 3.2rem); }
+
+.fqa-footnote-title {
+	margin-bottom: 0.6em;
+	font-size: 0.85em;
+	font-weight: 600;
+	color: var(--web-gray_40, #8a8a8a);
+	text-indent: 0;
+}
+
+.fqa-footnote-list {
+	margin: 0;
+	padding-left: 1.6em;
+	font-size: 0.85em;
+	line-height: 1.7;
+	color: var(--web-gray_40, #8a8a8a);
+}
+
+.fqa-footnote-list li {
+	margin-bottom: 0.5em;
+	text-indent: 0;
+	transition: background-color 0.3s ease;
+}
+
+.fqa-footnote-list li.fqa-footnote-active {
+	background: var(--web-brand_light, rgba(241, 70, 70, 0.12));
+	border-radius: 4px;
+}
+
+.muye-reader-content > body {
+	background-color: var(--web-bg)!important;
+}
+
+.fqa-icon-dark {
+	color: #B3B3B3
+}
+
+/* ----------------------------- 右键菜单 / Toast ----------------------------- */
+
+/*
+ * 书架与搜索共用。两者都把菜单 Teleport 到 body，
+ * 拿不到各自根节点上的变量，所以在这里声明一份全局色板。
+ */
+.fqa-menu {
+	--fqa-menu-bg: #fff;
+	--fqa-menu-text: #1f2329;
+	--fqa-menu-sub: #8f959e;
+	--fqa-menu-hover: rgba(31, 35, 41, 0.06);
+	--fqa-menu-danger: #f5222d;
+
+	position: fixed;
+	z-index: 2147483001;
+	min-width: 132px;
+	max-width: 240px;
+	padding: 4px;
+	box-sizing: border-box;
+	background: var(--fqa-menu-bg);
+	border: 1px solid rgba(31, 35, 41, 0.08);
+	border-radius: 8px;
+	box-shadow: 0 6px 24px rgba(31, 35, 41, 0.16);
+	font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial,
+		sans-serif;
+	font-size: 13px;
+	color: var(--fqa-menu-text);
+	user-select: none;
+}
+
+/* 二级面板：分组数量多时可滚动 */
+.fqa-menu-sub {
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.fqa-menu-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 7px 10px;
+	border-radius: 5px;
+	line-height: 1.4;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.fqa-menu-row > span:first-child {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.fqa-menu-row:hover,
+.fqa-menu-row.fqa-menu-open {
+	background: var(--fqa-menu-hover);
+}
+
+.fqa-menu-arrow {
+	color: var(--fqa-menu-sub);
+	font-size: 15px;
+	line-height: 1;
+}
+
+.fqa-menu-danger {
+	color: var(--fqa-menu-danger);
+}
+
+.fqa-menu-disabled {
+	color: var(--fqa-menu-sub);
+	cursor: not-allowed;
+}
+
+.fqa-menu-disabled:hover {
+	background: transparent;
+}
+
+/* 操作结果提示 */
+.fqa-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 48px;
+	transform: translateX(-50%);
+	z-index: 2147483002;
+	max-width: 80vw;
+	padding: 10px 18px;
+	box-sizing: border-box;
+	background: rgba(31, 35, 41, 0.88);
+	color: #fff;
+	border-radius: 8px;
+	font-size: 13px;
+	line-height: 1.4;
+	box-shadow: 0 6px 24px rgba(31, 35, 41, 0.24);
+	pointer-events: none;
+}
+
+/* 骨架屏微光。书架与搜索共用同一个动画名 */
+@keyframes fqa-shimmer {
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.fqa-menu {
+		--fqa-menu-bg: #23272e;
+		--fqa-menu-text: #e5e6eb;
+		--fqa-menu-sub: #8f959e;
+		--fqa-menu-hover: rgba(255, 255, 255, 0.08);
+		border-color: rgba(255, 255, 255, 0.1);
+	}
+}
+
+.info {
+	width: 100%!important;
+}
+
+.reader-toolbar {
+	user-select: none;
+}

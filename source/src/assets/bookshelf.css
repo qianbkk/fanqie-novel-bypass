@@ -1,0 +1,644 @@
+#fqa-bookshelf {
+    --fqa-text: #1f2329;
+    --fqa-text-sub: #646a73;
+    --fqa-text-weak: #8f959e;
+    --fqa-border: rgba(31, 35, 41, 0.08);
+    --fqa-hover: rgba(31, 35, 41, 0.04);
+    --fqa-accent: #ff6f3d;
+    --fqa-skeleton: rgba(31, 35, 41, 0.06);
+    --fqa-skeleton-hl: rgba(31, 35, 41, 0.12);
+    --fqa-shadow: 0 4px 16px rgba(31, 35, 41, 0.08);
+
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    /* 顶部留出原站 fixed 顶栏（80px）的高度，否则标题和 tab 会被压在下面 */
+    padding: calc(80px + 24px) 16px 64px;
+    color: var(--fqa-text);
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial,
+        sans-serif;
+}
+
+#fqa-bookshelf *,
+#fqa-bookshelf *::before,
+#fqa-bookshelf *::after {
+    box-sizing: border-box;
+}
+
+#fqa-bookshelf div,
+#fqa-bookshelf span,
+#fqa-bookshelf h1,
+#fqa-bookshelf ul,
+#fqa-bookshelf li {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    list-style: none;
+    float: none;
+    position: static;
+}
+
+/* ------------------------------ 顶部 / Tabs ------------------------------ */
+
+#fqa-bookshelf .fqa-bs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+#fqa-bookshelf .fqa-bs-title {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+#fqa-bookshelf .fqa-bs-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--fqa-text-weak);
+}
+
+#fqa-bookshelf .fqa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    border: 1px solid var(--fqa-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--fqa-text-sub);
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+#fqa-bookshelf .fqa-btn:hover:not(:disabled) {
+    border-color: var(--fqa-accent);
+    color: var(--fqa-accent);
+    background: rgba(255, 111, 61, 0.06);
+}
+
+#fqa-bookshelf .fqa-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+#fqa-bookshelf .fqa-tabs {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--fqa-border);
+}
+
+#fqa-bookshelf .fqa-tab {
+    padding: 10px 16px;
+    color: var(--fqa-text-sub);
+    font-size: 15px;
+    line-height: 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+#fqa-bookshelf .fqa-tab:hover {
+    color: var(--fqa-text);
+}
+
+#fqa-bookshelf .fqa-tab-active {
+    color: var(--fqa-accent);
+    font-weight: 600;
+}
+
+#fqa-bookshelf .fqa-tab-count {
+    margin-left: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--fqa-text-weak);
+}
+
+#fqa-bookshelf .fqa-tab-ink {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--fqa-accent);
+    transition: left 0.25s ease, width 0.25s ease;
+}
+
+/* ------------------------------- 书架网格 ------------------------------- */
+
+/* 原站一排最多 4 本；窄屏逐级降到 3 / 2 */
+#fqa-bookshelf .fqa-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 28px 24px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    #fqa-bookshelf .fqa-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    #fqa-bookshelf .fqa-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+#fqa-bookshelf .fqa-card {
+    display: block;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+}
+
+#fqa-bookshelf .fqa-card:focus-visible {
+    box-shadow: 0 0 0 2px var(--fqa-accent);
+}
+
+/* 封面：3:4，靠 aspect-ratio 定高，内部元素绝对定位 */
+#fqa-bookshelf .fqa-cover {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--fqa-skeleton);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#fqa-bookshelf .fqa-card:hover .fqa-cover {
+    transform: translateY(-4px);
+    box-shadow: var(--fqa-shadow);
+}
+
+#fqa-bookshelf .fqa-cover-img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.25s ease;
+}
+
+#fqa-bookshelf .fqa-cover-img-loading {
+    opacity: 0;
+}
+
+#fqa-bookshelf .fqa-cover-tag {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    padding: 2px 6px;
+    border-radius: 0 6px 0 6px;
+    background: var(--fqa-accent);
+    color: #fff;
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* 连载 / 完结 / 断更共用：灰底，弱化于“更新”角标 */
+#fqa-bookshelf .fqa-cover-tag-gray {
+    background: rgba(31, 35, 41, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+    #fqa-bookshelf .fqa-cover-tag-gray {
+        background: rgba(0, 0, 0, 0.6);
+    }
+}
+
+#fqa-bookshelf .fqa-cover-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+#fqa-bookshelf .fqa-cover-progress-bar {
+    display: block;
+    height: 100%;
+    background: var(--fqa-accent);
+    transition: width 0.3s ease;
+}
+
+/* 文字区：与封面同为普通流元素，不会重叠 */
+#fqa-bookshelf .fqa-card-title {
+    display: -webkit-box;
+    margin-top: 8px;
+    color: var(--fqa-text);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-all;
+}
+
+#fqa-bookshelf .fqa-card-sub {
+    margin-top: 4px;
+    color: var(--fqa-text-weak);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ------------------------------- 分组卡片 ------------------------------- */
+
+#fqa-bookshelf .fqa-group-cover {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(255, 111, 61, 0.12), rgba(78, 131, 253, 0.12));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#fqa-bookshelf .fqa-card:hover .fqa-group-cover {
+    transform: translateY(-4px);
+    box-shadow: var(--fqa-shadow);
+}
+
+#fqa-bookshelf .fqa-group-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 4px;
+    padding: 6px;
+}
+
+#fqa-bookshelf .fqa-group-cell {
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+    background: rgba(31, 35, 41, 0.06);
+}
+
+#fqa-bookshelf .fqa-group-cell img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 分组详情返回条 */
+
+#fqa-bookshelf .fqa-groupbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+#fqa-bookshelf .fqa-groupbar-name {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#fqa-bookshelf .fqa-groupbar-count {
+    color: var(--fqa-text-weak);
+    font-size: 13px;
+}
+
+/* --------------------------- hover 详情浮层 --------------------------- */
+
+/*
+ * 用 popover 进入浏览器顶层，不参与页面 z-index 竞争，
+ * 因此不会被相邻卡片或原站的层叠上下文盖住。z-index 仅作降级保险。
+ */
+#fqa-bookshelf-hover {
+    position: fixed;
+    z-index: 2147483000;
+    /* 容器本身透传，只有内部卡片接收事件，避免空白区挡住下层 */
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    /* allow-discrete：顶层元素从 display:none 切入时也能播放淡入 */
+    transition: opacity 0.16s ease, transform 0.16s ease, display 0.16s allow-discrete;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial,
+        sans-serif;
+}
+
+/* popover 默认带边框/内边距/居中定位，全部清掉，改由 left/top 控制 */
+#fqa-bookshelf-hover:popover-open,
+#fqa-bookshelf-hover[popover] {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    inset: auto;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
+    color: inherit;
+}
+
+#fqa-bookshelf-hover::backdrop {
+    background: transparent;
+}
+
+#fqa-bookshelf-hover.fqa-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@starting-style {
+    #fqa-bookshelf-hover.fqa-visible {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+}
+
+/* 高度由 JS 按封面尺寸设定；纵向 flex 让简介吃掉剩余空间 */
+#fqa-bookshelf-hover .fqa-hover-inner {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 280px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 8px 32px rgba(31, 35, 41, 0.16);
+    color: #1f2329;
+    overflow: hidden;
+    /* 卡片可交互：鼠标可以移进来而不触发收起 */
+    pointer-events: auto;
+}
+
+#fqa-bookshelf-hover .fqa-hover-title {
+    flex: none;
+    margin: 0;
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#fqa-bookshelf-hover .fqa-hover-author {
+    flex: none;
+    margin-top: 2px;
+    color: #8f959e;
+    font-size: 12px;
+    line-height: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stats {
+    display: flex;
+    flex: none;
+    margin-top: 10px;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 6px;
+    text-align: center;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat:first-child {
+    padding-left: 0;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat:last-child {
+    padding-right: 0;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat + .fqa-hover-stat {
+    border-left: 1px solid rgba(31, 35, 41, 0.08);
+}
+
+/* 第一栏可悬停切换为更新时间，给个可交互提示 */
+#fqa-bookshelf-hover .fqa-hover-stat:first-child {
+    border-radius: 4px;
+    cursor: default;
+    transition: background 0.15s ease;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat:first-child:hover {
+    background: rgba(31, 35, 41, 0.05);
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat-v {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#fqa-bookshelf-hover .fqa-hover-stat-k {
+    margin-top: 1px;
+    color: #8f959e;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 梗概 / 简介 双栏切换 */
+#fqa-bookshelf-hover .fqa-hover-seg {
+    display: flex;
+    flex: none;
+    gap: 4px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(31, 35, 41, 0.08);
+}
+
+#fqa-bookshelf-hover .fqa-hover-seg-btn {
+    flex: 1 1 0;
+    padding: 4px 0;
+    border: 0;
+    border-radius: 5px;
+    background: rgba(31, 35, 41, 0.05);
+    color: #646a73;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 18px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+#fqa-bookshelf-hover .fqa-hover-seg-btn:hover {
+    color: #1f2329;
+}
+
+#fqa-bookshelf-hover .fqa-hover-seg-active {
+    background: rgba(255, 111, 61, 0.12);
+    color: #ff6f3d;
+    font-weight: 500;
+}
+
+#fqa-bookshelf-hover .fqa-hover-seg-active:hover {
+    color: #ff6f3d;
+}
+
+/*
+ * 撑满剩余高度。行数不再写死，由容器高度自然裁切；
+ * min-height:0 让 flex 子项允许被压缩，否则 overflow 不生效。
+ */
+#fqa-bookshelf-hover .fqa-hover-abstract {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-top: 8px;
+    color: #646a73;
+    font-size: 12px;
+    line-height: 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#fqa-bookshelf-hover .fqa-hover-abstract::-webkit-scrollbar {
+    width: 4px;
+}
+
+#fqa-bookshelf-hover .fqa-hover-abstract::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background: rgba(31, 35, 41, 0.18);
+}
+
+
+#fqa-bookshelf-hover .fqa-hover-chapter {
+    display: block;
+    margin-bottom: 1px;
+    color: #1f2329;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ------------------------------- 骨架屏 ------------------------------- */
+
+#fqa-bookshelf .fqa-sk-cover {
+    display: block;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 6px;
+    background: var(--fqa-skeleton);
+}
+
+#fqa-bookshelf .fqa-sk-line {
+    height: 12px;
+    margin-top: 8px;
+    border-radius: 4px;
+    background: var(--fqa-skeleton);
+}
+
+#fqa-bookshelf .fqa-sk-anim {
+    position: relative;
+    overflow: hidden;
+}
+
+/* keyframes fqa-shimmer 在 script.css 里全局声明 */
+#fqa-bookshelf .fqa-sk-anim::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--fqa-skeleton-hl), transparent);
+    animation: fqa-shimmer 1.4s infinite;
+}
+
+/* --------------------------- 空态 / 错误态 --------------------------- */
+
+#fqa-bookshelf .fqa-loadmore {
+    padding: 24px 0;
+    text-align: center;
+    color: var(--fqa-text-weak);
+    font-size: 13px;
+}
+
+#fqa-bookshelf .fqa-status {
+    padding: 80px 16px;
+    text-align: center;
+    color: var(--fqa-text-weak);
+    font-size: 14px;
+    line-height: 22px;
+}
+
+#fqa-bookshelf .fqa-status-title {
+    margin-bottom: 8px;
+    color: var(--fqa-text);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+#fqa-bookshelf .fqa-status .fqa-btn {
+    margin-top: 16px;
+}
+
+/* ------------------------------- 深色模式 ------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+    #fqa-bookshelf {
+        --fqa-text: #e6e6e6;
+        --fqa-text-sub: #a6a6a6;
+        --fqa-text-weak: #7a7a7a;
+        --fqa-border: rgba(255, 255, 255, 0.1);
+        --fqa-hover: rgba(255, 255, 255, 0.06);
+        --fqa-skeleton: rgba(255, 255, 255, 0.08);
+        --fqa-skeleton-hl: rgba(255, 255, 255, 0.14);
+        --fqa-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    #fqa-bookshelf-hover .fqa-hover-inner {
+        background: #212125;
+        color: #e6e6e6;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    #fqa-bookshelf-hover .fqa-hover-chapter {
+        color: #e6e6e6;
+    }
+
+    #fqa-bookshelf-hover .fqa-hover-abstract {
+        color: #a6a6a6;
+        border-top-color: rgba(255, 255, 255, 0.1);
+    }
+
+    #fqa-bookshelf-hover .fqa-hover-stat + .fqa-hover-stat {
+        border-left-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* 右键菜单与 toast 样式已移到 script.css，书架和搜索共用 */

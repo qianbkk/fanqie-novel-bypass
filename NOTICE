@@ -1,0 +1,46 @@
+fanqie-novel-bypass
+Copyright (c) 2026 qianbkk
+
+This product includes software developed at
+naiyQAQ/fanqie-assistant (https://github.com/naiyQAQ/fanqie-assistant)
+Copyright (c) 2024–2026 naiyQAQ and contributors
+
+---
+
+This repository is a fork of naiyQAQ/fanqie-assistant v0.0.6, distributed
+under the GNU General Public License v3.0. Per the terms of GPL-3.0, this
+modified version preserves the original copyright notice and license.
+
+Modifications made in this fork (v0.1.0):
+
+* Added 6 new modules under source/src/:
+    - utils/logger.ts        — ring-buffer diagnostic logger
+    - utils/throttle.ts      — Box-Muller normal-distribution throttle
+    - cache/index.ts         — IndexedDB chapter cache (session + Pin)
+    - pool/index.ts          — 3-slot device pool with manual refill
+    - panel/index.ts         — floating control panel + sidebar upgrade
+    - panel/recovery.ts      — 5-option failure recovery dialog
+
+* Modified existing modules:
+    - main.ts                — serialized initialization
+    - api/app.ts             — replaced upstream replaceDevice() with pool
+    - hooks/readerHook.ts    — integrated cache lookup + Pin button injection
+    - vite.config.ts         — updated @name / @description / @author metadata
+    - package.json           — version 0.0.6 → 0.1.0
+
+* Removed features (v0.1.0 slim strategy):
+    - bookshelfHook, searchHook, audioPanel, download/, epub/
+    - userHook (avatar menu)
+    - GM_cookie permission
+    - @connect domain list reduced from 9 to 3
+
+The upstream full-feature build (v0.0.6) is preserved verbatim at
+release/fanqie-assistant-v0.0.6.user.js as an emergency fallback.
+
+For full attribution of upstream contributors, see:
+https://github.com/naiyQAQ/fanqie-assistant/graphs/contributors
+
+---
+
+本仓库是 naiyQAQ/fanqie-assistant v0.0.6 的修改版本，按 GPL-3.0 条款保留
+上游版权声明与许可。
