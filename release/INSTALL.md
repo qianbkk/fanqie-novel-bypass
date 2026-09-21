@@ -4,8 +4,9 @@
 
 | 文件 | 大小 | 何时用 |
 |------|------|--------|
-| **`fanqie-assistant-v0.1.1.user.js`** | **267 KB** | **默认推荐**。本 fork 完整版，含反封禁 6 层防线 + 设备池 + Pin + 控制面板。控制面板挂载 bug 已修复。 |
-| `fanqie-assistant-v0.1.0.user.js` | 267 KB | ⚠️ 已知 bug：document-start 时 `mountPanel()` 抛错（body 不存在），导致 ⚙️ 控制面板看不到，且设备池 / 缓存实际未初始化。**不要装这个版本**。如果已经装了，请卸载并装 v0.1.1。 |
+| **`fanqie-assistant-v0.2.0.user.js`** | **271 KB** | **默认推荐**。v0.2.0 把章节获取路径切到 fanqienovel.com 同源主路径，能拿到完整字体验密正文（不是试读段）。 |
+| `fanqie-assistant-v0.1.1.user.js` | 267 KB | 控制面板挂载 bug 修复版。但**snssdk 设备接口拿不到完整正文**（设计只回试读段），只看到"前面一部分"是预期行为，**不是这台机器的问题**。如果还在用，建议立刻升级 v0.2.0。 |
+| `fanqie-assistant-v0.1.0.user.js` | 267 KB | ⚠️ 已知 bug：document-start 时 `mountPanel()` 抛错（body 不存在），导致 ⚙️ 控制面板看不到，且设备池 / 缓存实际未初始化。**不要装这个版本**。 |
 | `fanqie-assistant-v0.0.6.user.js` | 490 KB | 上游原始全功能版。**仅当**你需要书架 / 搜索 / 下载 / 听书 / 评论这些本 fork 精简策略不包含的功能时用。 |
 
 两个文件**不要同时装** —— 同时启用会重复注入。
@@ -13,17 +14,16 @@
 ## 安装步骤
 
 1. 安装脚本管理器：[Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 [Violentmonkey](https://violentmonkey.github.io/)。
-2. 用浏览器打开 `fanqie-assistant-v0.1.1.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
+2. 用浏览器打开 `fanqie-assistant-v0.2.0.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
 3. 脚本管理器弹出安装页 → 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
 ## 首次启动行为
 
-- 自动注册 3 个设备，间隔 0 s / 10 s / 30 s（防"批量注册"风控）。
-- 同时激活 30 天 SVIP。
-- 控制面板 ⚙️ 出现在右下角（点开可看状态 / 设备池 / Pin / 节流 / 日志）。
+- 注册过的池子会复用，**首次安装**才会注册 3 个新设备（0 s / 10 s / 30 s 错开启动，注册时会同时激活 30 天 SVIP）
+- 控制面板 ⚙️ 出现在右下角（点开可看状态 / 设备池 / Pin / 节流 / 日志）
 
-**首次访问章节会等 ~30 s 直到第 3 个设备注册完成**——这是设计如此，不算 bug。
+**首次访问章节会等 ~30 s 直到第 3 个设备后台注册完成**——这是设计如此，不算 bug。
 
 ## 控制面板
 
@@ -86,10 +86,24 @@
 | `[fqa:pool]` | 设备池 |
 | `[fqa:throttle]` | 节流 |
 | `[fqa:cache]` | 缓存 |
-| `[fqa:reader]` | 阅读器 |
+| `[fqa:reader]` | 阅读器（含字体验密日志） |
+| `[fqa:content]` | 章节内容（同源 vs snssdk 路径选择） |
 | `[fqa:recovery]` | 恢复弹窗 |
 | `[fqa:panel]` | 控制面板 |
 | `[fqa:logger]` | 日志本身 |
+
+### 看到 "前面部分" 怎么办（关键 30 秒排查）
+
+v0.2.0 应该已经完全修复这一现象（切到同源完整路径）。如果还出现：
+
+1. **确认装的是 v0.2.0**（不是 v0.1.x）—— F12 在 Console 输入 `version banner` 不行时，看脚本头部 Tampermonkey 仪表盘的版本号。
+2. **控制台过滤 `字体验密`** —— 看是否出现 `[fqa:reader] 字体验密 DNMrHsV173Pd4pgy` 这样的日志：
+   - ✅ 出现 → 字体已识别，但显示仍是 ▒，可能是 mapping 表没覆盖；把 `字体验密` 那行的 font-id 报给作者
+   - ❌ 没出现 → fetch 没走同源路径，看 `[fqa:content]` 日志确认走了哪条
+3. **过滤 `[fqa:content]`** 看是 web 还是 fallback：
+   - `web` 来源 = 走 fanqienovel.com 同源（应当拿到完整）
+   - `snssdk-fallback` 来源 = 同源被拒，退到老接口（拿不到完整）
+4. **命中未支持的字体 id** —— 把章节 URL 和控制台抓到 `字体验密 <id>` 里的 id 报给作者补 mapping 表。
 
 ### 手动重置设备池
 控制面板 → 设备池 → "⚠ 重置整个池子"。会让所有 3 个 device_id 失效并重新注册。**慎用**。
@@ -105,8 +119,9 @@
 ## 已知限制
 
 - **无法永远不被封**：服务端持续升级风控，本 fork 设计目标是"用几个月不被封"，不是"永远"。
+- **未知字体 id**：mapping 表当前覆盖 3 套（`DNMrHsV173Pd4pgy` / `fKts9tCXDjS49UhH` / `_search`）。遇到新字体时该章会显示 ▒ 字符。报告 issue 把 font-id + 章节 URL 报给作者补表。
 - **下载到本地文件（TXT / EPUB）**：未实现。Pin 已覆盖"本地持久缓存"核心需求。
-- **听书 / 书架 / 搜索 / 评论**：未包含（v0.1.0 精简策略）。需要的话用 `fanqie-assistant-v0.0.6.user.js`（全功能 fallback）。
+- **听书 / 书架 / 搜索 / 评论**：未包含。需要的话用 `fanqie-assistant-v0.0.6.user.js`（全功能 fallback）。
 - **未在真实 Tampermonkey 长周期压测**：1–2 h 连续阅读已验证，1–3 天长测需要用户报告。
 
 ## 出问题怎么办
