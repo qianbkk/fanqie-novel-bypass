@@ -21,7 +21,6 @@ import {
     switchChapter,
 } from '../audiobook/controller'
 import { cacheChapter, getCachedChapter, pinBook, unpinBook, isPinned, updateReadingProgress } from '../cache'
-import { decryptText } from '../fontDecrypt'
 import { info, debug, warn } from '../utils/logger'
 // import moment from 'moment'
 
@@ -99,37 +98,6 @@ addResponseModifier({
         }
     },
 })
-
-/**
- * 把容器内所有文本节点的加密字符替换回真中文字符。
- *
- * 用 fontDecrypt.decryptText 逐节点处理。它只认 mapping 内的 font-id，
- * 不在表里的字体直接原样保留（不会报错，但也不解密，等 mapping 表补全）。
- *
- * 之所以自己写一个轻量版而不是调 fontDecrypt.decryptElement:
- *   - decryptElement 同时受 settings.decryptFont 影响、还要依赖 TreeWalker
- *     + closest(enTag) 跳过嵌套的其他字体节点，太重；
- *   - 我们已经把 font-<id> 类挂在 scriptContainer 自身，不会嵌套，
- *     也只想解密自己刚注入的内容；
- *   - 不动 settings.decryptFont 这个用户开关，避免影响读者面板的默认行为。
- */
-function decryptFontIn(root: Element, fontId: string): void {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null)
-    let n: Node | null
-    let touched = 0
-    while ((n = walker.nextNode())) {
-        const tn = n as Text
-        if (!tn.nodeValue) continue
-        const next = decryptText(tn.nodeValue, fontId)
-        if (next !== tn.nodeValue) {
-            tn.nodeValue = next
-            touched++
-        }
-    }
-    if (touched > 0) {
-        info('reader', `字体验密完成：${touched} 个文本节点`, { fontId })
-    }
-}
 
 /**
  * 取到脚本容器：没有就克隆一个插到原容器前面，有就复用并清空。
@@ -308,20 +276,7 @@ async function insertContent() {
         const readerContainer = document.querySelector("div.muye-reader-content:not(.fqa)")
         if (readerContainer) {
             const scriptContainer = ensureScriptContainer(readerContainer, false)
-            // v0.2.0: 字体验密 — 同源接口返回的 content 是用私有 unicode 区字符
-            // 加密的中文。给容器打 `font-<id>` 类，再用 fontDecrypt mapping 表逐
-            // 字符替换回真实中文字符。fontDecrypt 的 TreeWalker 只接受
-            // closest(enTag) == 容器本身的文本节点，把 `font-<id>` 加在容器自己
-            // 上才能完整覆盖（之前加在爷爷节点 .muye-reader-box 上反而被
-            // closest() 过滤掉）。
-            if (chapter._webFontId && typeof chapter._webFontId === 'string') {
-                scriptContainer.classList.add(`font-${chapter._webFontId}`)
-            }
             scriptContainer.appendChild(toProcess)
-            if (chapter._webFontId && typeof chapter._webFontId === 'string') {
-                info('reader', `字体验密 ${chapter._webFontId}`, { source: chapter._source })
-                decryptFontIn(scriptContainer, chapter._webFontId)
-            }
             bindFootnoteInteraction(scriptContainer)
         }
     } else if (chapter.content.picInfos) { // comic

@@ -16,10 +16,9 @@
 | `src/panel/recovery.ts` | 🆕 新增 | 失败恢复弹窗 |
 | `src/main.ts` | ✏️ 改写 | 串行化初始化 |
 | `src/api/app.ts` | ✏️ 改写 | `requestAppWithRecovery()` 用 pool 替代 `replaceDevice` |
-| `src/api/content.ts` | ✏️ v0.2.0 重写 | `getChapter()` 走同源 `/api/reader/full` 主路径，snssdk 作 fallback；从 `x-tt-zhal` 响应头拿 font-id |
-| `src/hooks/readerHook.ts` | ✏️ 扩展 | `insertContent()` 加缓存 + 字体验密 + `injectPinButton()` 顶栏 📌 |
+| `src/hooks/readerHook.ts` | ✏️ 扩展 | `insertContent()` 加缓存 + `injectPinButton()` 顶栏 📌 |
 | `vite.config.ts` | ✏️ 改 metadata | name / description / author |
-| `package.json` | ✏️ 版本 | 0.0.6 → 0.2.0 |
+| `package.json` | ✏️ 版本 | 0.0.6 → 0.1.0 |
 
 其他目录（`api/`、`crypto/`、`hooks/`、`utils/` 等）保留上游原状，便于对照 diff。
 
@@ -35,8 +34,8 @@ npm run build     # tsc 类型检查 + vite 打包
 
 构建产物写到 `source/dist/fanqie-assistant-lite.user.js`。
 
-发布流程：构建完成后**手工复制**到顶层 `release/fanqie-assistant-v0.2.0.user.js`。  
-v0.2.0 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发布物同名不同源。
+发布流程：构建完成后**手工复制**到顶层 `release/fanqie-assistant-v0.1.x.user.js`。  
+v0.1.x 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发布物同名不同源。
 
 ### 修改 metadata
 
@@ -46,7 +45,7 @@ v0.2.0 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发�
 monkeyConfig: {
   meta: {
     name: { value: '...' },
-    version: { value: '0.2.0' },
+    version: { value: '0.1.0' },
     // ...
   },
 }
