@@ -5,7 +5,7 @@ import { read, write } from '../localStorage'
 import { decryptChapter } from '../crypto/content'
 import { encryptKeyinfoBody, decryptKeyinfoResponse } from '../crypto/registerkey'
 import { sleep } from '../utils'
-import { XMLHttpRequest as pageXHR } from '../config'
+import { fetch as pageFetch } from '../config'
 import { warn } from '../utils/logger'
 
 
@@ -74,36 +74,26 @@ async function ensureKeyinfo(expectedKeyVersion?: number): Promise<void> {
 
 
 /* ============================================================================
- * v0.2.1 — 同源主路径 (preferred) + XHR 通道
+ * v0.2.0 — 同源主路径 (preferred)
  *
  * 浏览器实际拿章节用的是 fanqienovel.com 同源 `/api/reader/full?itemId=...`，
- * fanqie 页面用 XMLHttpRequest 发，secsdk 会在 XMLHttpRequest.prototype.open
- * 时自动给 URL 注入 msToken / a_bogus。**v0.2.0 错用 fetch**，而 fetchHook.ts
- * 注入时机早于 secsdk 会覆盖 secsdk 的 fetch hook，导致 user.js 的 fetch 拿不到
- * 签名、服务端返空 body。v0.2.1 改用 XMLHttpRequest（user.js 子类化 XHR 但不
- * 影响 prototype，secsdk 的 prototype hook 仍生效）。
+ * 带 msToken / a_bogus / ttwid 这些由字节 secsdk 注入的字段。
  *
  * server response header `x-tt-zhal` 给出该章用的加密字体 id 和 hash：
  *   x-tt-zhal: k=DNMrHsV173Pd4pgy;f=dc027189e0ba4cd;d1=lf6-awef.bytetos.com;d2=...
  *
  * 解密靠 source/src/fontDecrypt.ts 的 mapping 表（已覆盖常见字体）。
  *
- * 该路径对匿名 / 无 device 仍开放，能拿到完整正文（EDGE 9/21 实测 7444020932860985881
- * chapterWordNumber=2423，content 长度匹配），不像 snssdk 设备接口那样按
+ * 该路径对匿名 / 无 device 仍开放，能拿到完整正文（chrome 9/21 实测
+ * chapterWordNumber=2016，content 长度匹配），不像 snssdk 设备接口那样按
  * VIP 等级只返回试读段。
  *
  * 失败 fallback 到原 snssdk 路径。
  * ========================================================================== */
 
 /**
- * 通过浏览器原生 XMLHttpRequest 拉同源章节接口。
- *
- * v0.2.0 原本用 fetch，结果 EDGE 实测发现 fanqie 的 secsdk **只 hook 了 XHR.prototype
- * 没 hook fetch**，所以 fetch 路径拿不到 a_bogus/msToken，服务端返空 body。
- * fetchHook.ts 注入时机早于 secsdk，会把 secsdk 的 fetch hook 覆盖掉，更拿不到签名。
- *
- * 改用 XHR（user.js 子类化 XHR 但不影响 prototype，secsdk 的 prototype hook 仍生效），
- * open() 时 secsdk 自动给 URL 注入 a_bogus + msToken，send 后服务端返完整 JSON。
+ * 通过浏览器原生 fetch 拉同源章节接口。必须在 document 已加载的页面上调用，
+ * 否则 ttwid / csrf cookie 没生效、secsdk 也没装。
  *
  * @returns 成功时返回 chapterData + 解析出的 font-id / font-hash；失败抛错
  */
@@ -114,32 +104,14 @@ export async function getChapterViaWeb(itemId: string): Promise<{
     fontDomain: string | null
 }> {
     const url = `https://fanqienovel.com/api/reader/full?itemId=${encodeURIComponent(itemId)}`
-    const { status, zhal, body } = await new Promise<{ status: number; zhal: string | null; body: string }>(
-        (resolve, reject) => {
-            const xhr = new pageXHR()
-            xhr.open('GET', url, true)
-            xhr.withCredentials = true
-            xhr.setRequestHeader('ismobile', '0')
-            xhr.setRequestHeader('Accept', 'application/json, text/plain, */*')
-            // 注：Referer 浏览器会自动从当前页 URL 推断，手动 setRequestHeader
-            // 会被拒（"Refused to set unsafe header"），所以不设。
-            xhr.onload = () =>
-                resolve({
-                    status: xhr.status,
-                    zhal: xhr.getResponseHeader('x-tt-zhal'),
-                    body: xhr.responseText,
-                })
-            xhr.onerror = () => reject(new Error(`xhr network error for ${itemId}`))
-            xhr.send()
-        }
-    )
-    if (status !== 200) {
-        throw new Error(`web /api/reader/full HTTP ${status}`)
+    const resp = await pageFetch(url, {
+        credentials: 'include',
+        headers: { Accept: 'application/json, text/plain, */*' },
+    })
+    if (!resp.ok) {
+        throw new Error(`web /api/reader/full HTTP ${resp.status}`)
     }
-    if (!body) {
-        throw new Error('web /api/reader/full returned empty body')
-    }
-    const j = JSON.parse(body)
+    const j = await resp.json()
     if (j?.code !== 0 || !j?.data?.chapterData) {
         throw new Error(`web /api/reader/full returned code=${j?.code} message=${j?.message ?? ''}`)
     }
@@ -148,8 +120,8 @@ export async function getChapterViaWeb(itemId: string): Promise<{
         throw new Error('web /api/reader/full returned empty content')
     }
     // 解析 x-tt-zhal: k=<fontId>;f=<fontHash>;d1=<domain>;d2=<domain>
-    const zhalStr = zhal || ''
-    const parts = zhalStr.split(';').map((s) => s.trim()).filter(Boolean)
+    const zhal = resp.headers.get('x-tt-zhal') || ''
+    const parts = zhal.split(';').map((s) => s.trim()).filter(Boolean)
     let fontId: string | null = null
     let fontHash: string | null = null
     let fontDomain: string | null = null

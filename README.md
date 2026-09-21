@@ -16,7 +16,7 @@
 
 | 维度 | 上游原版 | 本 fork |
 |------|---------|---------|
-| 阅读解锁 / 字体解密 | ✅ | ✅（v0.2.1 起路径切到 fanqienovel.com 同源 + 字体解码）|
+| 阅读解锁 / 字体解密 | ✅ | ✅（v0.2.0 起路径切到 fanqienovel.com 同源 + 字体解码）|
 | 书架 / 搜索 / 听书 / 评论 / 下载 | ✅ | ❌（v0.1.0 精简策略不包含）|
 | L1 请求节流 | ❌ | ✅ 5–25 s 正态分布 |
 | L2 章节缓存 | ❌ | ✅ IndexedDB + Pin 升级 |
@@ -31,19 +31,19 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 Violentmonkey。
-2. 打开 [`release/fanqie-assistant-v0.2.1.user.js`](release/fanqie-assistant-v0.2.1.user.js)，脚本管理器会自动弹出安装页。
+2. 打开 [`release/fanqie-assistant-v0.2.0.user.js`](release/fanqie-assistant-v0.2.0.user.js)，脚本管理器会自动弹出安装页。
 3. 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
-**首次启动**：脚本会自动注册 3 个设备，间隔 0 s / 10 s / 30 s（避免"批量注册"风控），同时激活 30 天 SVIP。**v0.2.1 起同源章节获取路径走 XHR 通道**（secsdk 只 hook XHR 不 hook fetch），旧 snssdk 跨域接口保留为 fallback。详情见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的 L5 / L6 和章末"内容获取路径"。
+**首次启动**：脚本会自动注册 3 个设备，间隔 0 s / 10 s / 30 s（避免"批量注册"风控），同时激活 30 天 SVIP。**v0.2.0 起新增同源章节获取路径**，优先走 fanqienovel.com 同源 `/api/reader/full`，旧 snssdk 跨域接口保留为 fallback。详情见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的 L5 / L6 和章末"内容获取路径"。
 
 ## 文档目录
 
 | 文档 | 内容 |
 |------|------|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 6 层反封禁防线详解 + v0.2.1 内容获取路径（同源 / XHR / 字体解码）|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 6 层反封禁防线详解 + v0.2.0 内容获取路径（同源 / 字体解码）|
 | [docs/DESIGN.md](docs/DESIGN.md) | 设计原则（不自残 / 不存签名凭据 / 不上报）+ 取舍记录 |
-| [docs/CHANGELOG.md](docs/CHANGELOG.md) | v0.2.1 vs v0.2.0 vs v0.1.x vs v0.0.6 的差异、Lite 版历史 |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md) | v0.2.0 vs v0.1.x vs v0.0.6 的差异、Lite 版历史 |
 | [release/INSTALL.md](release/INSTALL.md) | 安装 + 故障排查 + 已知限制 |
 
 ## 仓库结构
