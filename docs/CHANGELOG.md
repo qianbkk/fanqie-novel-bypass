@@ -1,5 +1,20 @@
 # 版本变更
 
+## v0.2.x (2026-09-21) — 已撤回（不要装）
+
+**错误方向**：v0.2.0 / v0.2.1 完全重写 `source/src/api/content.ts`，把上游 `https://reading.snssdk.com/reading/reader/full/v`（snssdk 老接口 + 完整 SM3 签名链 + AES-CBC 解密）替换为 `https://fanqienovel.com/api/reader/full`（fanqienovel.com 同源试读段 API）。
+
+**实测后果**（edge 真实浏览器 + chrome-devtools-mcp 沙箱双验证）：
+- 装 v0.2.1 → 章节页「本章字数：3401 字」→ 实际显示 9 段 ≈ 130–140 中文字（典型试读段）
+- chrome 沙箱 `fetch('https://fanqienovel.com/api/reader/full?itemId=...')` → `contentLength=200, chapterWordNumber=2423, needPay=0, isChapterLock=true`（确认是试读段）
+- 章节 ID `7445246192578986520` 完整正文必须走 snssdk 老接口 + 完整签名链才能拿到，fanqienovel.com 同源 API 对所有环境（chrome / edge / 沙箱）都只给试读段
+
+**结论**：v0.2.x 不是"在 v0.1.x 基础上优化"，而是"把完整正文路径错切到试读段路径"。已通过 `git revert` 把源码回滚到 v0.1.1，对应 GitHub Release v0.1.0 标 Latest，v0.2.0 / v0.2.1 Release 标 Pre-release 撤回。
+
+**状态**：master HEAD 已回滚（commit `201586a` / `3998f6a` 两个 Revert）。如果装过 v0.2.0 / v0.2.1，请卸载并装 `fanqie-assistant-v0.1.1.user.js`（GitHub Release v0.1.0 内含）。
+
+---
+
 ## v0.1.1 (2026-09-20) — 控制面板挂载 bug 修复
 
 **Bug**：v0.1.0 在 `document-start` 时调用 `mountPanel()`，但此时 `document.body` 还不存在，导致 `document.body.appendChild()` 抛错。结果：
