@@ -16,10 +16,10 @@
 | `src/panel/recovery.ts` | 🆕 新增 | 失败恢复弹窗 |
 | `src/main.ts` | ✏️ 改写 | 串行化初始化 |
 | `src/api/app.ts` | ✏️ 改写 | `requestAppWithRecovery()` 用 pool 替代 `replaceDevice` |
-| `src/api/content.ts` | ✏️ v0.2.0 重写 | `getChapter()` 走同源 `/api/reader/full` 主路径，snssdk 作 fallback；从 `x-tt-zhal` 响应头拿 font-id |
+| `src/api/content.ts` | ✏️ v0.2.1 重写 | `getChapterViaWeb()` 走同源 `/api/reader/full` **XHR 通道**（secsdk 只 hook XHR.prototype 不 hook fetch）；从 `x-tt-zhal` 响应头拿 font-id；snssdk 作 fallback |
 | `src/hooks/readerHook.ts` | ✏️ 扩展 | `insertContent()` 加缓存 + 字体验密 + `injectPinButton()` 顶栏 📌 |
 | `vite.config.ts` | ✏️ 改 metadata | name / description / author |
-| `package.json` | ✏️ 版本 | 0.0.6 → 0.2.0 |
+| `package.json` | ✏️ 版本 | 0.0.6 → 0.2.1 |
 
 其他目录（`api/`、`crypto/`、`hooks/`、`utils/` 等）保留上游原状，便于对照 diff。
 
@@ -46,7 +46,7 @@ v0.2.0 是从 v0.0.6 fork 出来的精简构建产物，跟上游 v0.0.6 的发�
 monkeyConfig: {
   meta: {
     name: { value: '...' },
-    version: { value: '0.2.0' },
+    version: { value: '0.2.1' },
     // ...
   },
 }

@@ -15,7 +15,9 @@
 
 原版 v0.0.6 防线 3 和 5 做得扎实（沿用在本 fork），其他 4 路全部欠缺。本 fork 一次性补齐。
 
-**v0.2.0 增量**：把章节获取主路径从跨域 snssdk 设备接口（设计只返试读段）切到同源 `/api/reader/full`（浏览器自己用的真实通道，返回完整字体验密正文）。这是 v0.1.x 一直被吐槽的"前面部分"问题的真因——不是 VIP 过期也不是 v0.1.1 修坏了，是设计如此。
+**v0.2.1 增量**：把章节获取主路径从跨域 snssdk 设备接口（设计只返试读段）切到同源 `/api/reader/full`（浏览器自己用的真实通道，返回完整字体验密正文）。这是 v0.1.x 一直被吐槽的"前面部分"问题的真因——不是 VIP 过期也不是 v0.1.1 修坏了，是设计如此。
+
+**v0.2.1 在 v0.2.0 基础上又修了一处**：v0.2.0 用 fetch 调同源，EDGE 实测发现字节 webmssdk (secsdk) **只 hook 了 `XMLHttpRequest.prototype.open/send`，没 hook `window.fetch`**——fanqie 页面用 XHR 时 secsdk 自动注入 msToken/a_bogus，user.js 用 fetch 时拿不到签名，服务端静默返空 body。v0.2.1 改用 `new unsafeWindow.XMLHttpRequest()`（user.js 子类化 XHR 但不影响 prototype，secsdk 的 prototype hook 仍生效），open() 时 secsdk 自动给 URL 注入签名。
 
 ## L1 请求节流
 

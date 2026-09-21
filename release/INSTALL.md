@@ -4,8 +4,9 @@
 
 | 文件 | 大小 | 何时用 |
 |------|------|--------|
-| **`fanqie-assistant-v0.2.0.user.js`** | **271 KB** | **默认推荐**。v0.2.0 把章节获取路径切到 fanqienovel.com 同源主路径，能拿到完整字体验密正文（不是试读段）。 |
-| `fanqie-assistant-v0.1.1.user.js` | 267 KB | 控制面板挂载 bug 修复版。但**snssdk 设备接口拿不到完整正文**（设计只回试读段），只看到"前面一部分"是预期行为，**不是这台机器的问题**。如果还在用，建议立刻升级 v0.2.0。 |
+| **`fanqie-assistant-v0.2.1.user.js`** | **271 KB** | **默认推荐**。v0.2.1 把章节获取通道从 fetch 切到 XMLHttpRequest（secsdk 只 hook XHR.prototype，不 hook fetch），同源路径能拿到完整字体验密正文（不是试读段）。 |
+| `fanqie-assistant-v0.2.0.user.js` | 271 KB | 9/21 中版。同源主路径已切但仍用 fetch → EDGE 实测 secsdk 不给 fetch 注入签名，服务端返空 body → 还是看到试读段。**不要装这个版本**。 |
+| `fanqie-assistant-v0.1.1.user.js` | 267 KB | 控制面板挂载 bug 修复版。但**snssdk 设备接口拿不到完整正文**（设计只回试读段），只看到"前面一部分"是预期行为，**不是这台机器的问题**。 |
 | `fanqie-assistant-v0.1.0.user.js` | 267 KB | ⚠️ 已知 bug：document-start 时 `mountPanel()` 抛错（body 不存在），导致 ⚙️ 控制面板看不到，且设备池 / 缓存实际未初始化。**不要装这个版本**。 |
 | `fanqie-assistant-v0.0.6.user.js` | 490 KB | 上游原始全功能版。**仅当**你需要书架 / 搜索 / 下载 / 听书 / 评论这些本 fork 精简策略不包含的功能时用。 |
 
@@ -14,7 +15,7 @@
 ## 安装步骤
 
 1. 安装脚本管理器：[Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 [Violentmonkey](https://violentmonkey.github.io/)。
-2. 用浏览器打开 `fanqie-assistant-v0.2.0.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
+2. 用浏览器打开 `fanqie-assistant-v0.2.1.user.js`（脚本管理器会自动识别 `.user.js` 后缀）。
 3. 脚本管理器弹出安装页 → 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
@@ -94,13 +95,13 @@
 
 ### 看到 "前面部分" 怎么办（关键 30 秒排查）
 
-v0.2.0 应该已经完全修复这一现象（切到同源完整路径）。如果还出现：
+v0.2.1 应该已经完全修复这一现象（同源 + XHR 通道）。如果还出现：
 
-1. **确认装的是 v0.2.0**（不是 v0.1.x）—— F12 在 Console 输入 `version banner` 不行时，看脚本头部 Tampermonkey 仪表盘的版本号。
+1. **确认装的是 v0.2.1**（不是 v0.1.x 也不是 v0.2.0）—— F12 看脚本头部 Tampermonkey 仪表盘的版本号。
 2. **控制台过滤 `字体验密`** —— 看是否出现 `[fqa:reader] 字体验密 DNMrHsV173Pd4pgy` 这样的日志：
    - ✅ 出现 → 字体已识别，但显示仍是 ▒，可能是 mapping 表没覆盖；把 `字体验密` 那行的 font-id 报给作者
-   - ❌ 没出现 → fetch 没走同源路径，看 `[fqa:content]` 日志确认走了哪条
-3. **过滤 `[fqa:content]`** 看是 web 还是 fallback：
+   - ❌ 没出现 → XHR 没走同源路径，看 `[fqa:content]` 日志确认走了哪条
+4. **过滤 `[fqa:content]`** 看是 web 还是 fallback：
    - `web` 来源 = 走 fanqienovel.com 同源（应当拿到完整）
    - `snssdk-fallback` 来源 = 同源被拒，退到老接口（拿不到完整）
 4. **命中未支持的字体 id** —— 把章节 URL 和控制台抓到 `字体验密 <id>` 里的 id 报给作者补 mapping 表。

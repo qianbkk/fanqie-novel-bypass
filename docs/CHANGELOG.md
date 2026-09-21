@@ -1,5 +1,67 @@
 # 版本变更
 
+## v0.2.1 (2026-09-21) — 同源主路径 fetch → XHR 通道切换
+
+**根因**：v0.2.0 在用户真实 EDGE 上部署后控制台仍报 `Unexpected end of JSON input`。用户通过 Network → Copy as cURL 实测对比发现：
+
+| 路径 | URL 完整参数 | 响应 |
+|------|------------|------|
+| user.js 的 fetch（4.8 kB）| `?itemId=...` | 200 + **空 body** |
+| fanqie 自己的 XHR（4.5 kB）| `?itemId=...&msToken=...&a_bogus=...` | 200 + 完整 JSON + `x-tt-zhal` 头 |
+
+URL 缺 `msToken`/`a_bogus` 是 fanqie 服务端 fanqienovel.com 静默拒签的标志（返 200 + 空 body 而不是 4xx，是故意不暴露校验规则）。
+
+**真正的根因（不是 a_bogus 算法缺失）**：字节 webmssdk (secsdk) **只 hook 了 `XMLHttpRequest.prototype.open/send`，没 hook `window.fetch`**。fanqie 页面用 XHR 时 secsdk 自动注入签名；user.js 用 fetch 时没 hook 帮忙加签名。
+
+更深一层：`fetchHook.ts` 用 `const originalFetch = unsafeWindow.fetch.bind(unsafeWindow)` 在**模块顶层**捕获原 fetch。`@run-at document-start` 注入时，secsdk 的 fetch hook 还没装上，所以 originalFetch 是**未被 hook 的原始 fetch**——即使 secsdk 后来加了 hook，也被 user.js 覆盖掉了。
+
+XHR 那边没这个问题：fetchHook.ts 用 `class extends originalXMLHttpRequest` 子类化整个 XHR 类，**没碰 prototype**，secsdk 之前 hook 在 prototype 上的方法完整保留。`super.open(url)` 调的就是 secsdk 想 hook 的方法。
+
+### 改动
+
+| 文件 | 改动 |
+|------|------|
+| `src/api/content.ts` | `getChapterViaWeb()` 把 `pageFetch()` 换成 `new pageXHR()`。`pageXHR = unsafeWindow.XMLHttpRequest`（来自 config.ts）。open() 时 secsdk 自动注入 a_bogus，拿到完整 JSON + zhal 头。Referer 浏览器自动从当前页推断，不需要手动 setRequestHeader |
+| `src/api/content.ts` | import 改 `import { XMLHttpRequest as pageXHR } from '../config'`（原来 `import { fetch as pageFetch }`）|
+| `src/api/content.ts` | 顶部 doc 注释 + 已知结论表更新为 XHR 通道 + EDGE 实测样例 |
+| `package.json` | version `0.2.0` → `0.2.1` |
+
+### EDGE 真实环境验证（用户 9/21）
+
+```js
+const xhr = new XMLHttpRequest()
+xhr.open('GET', '/api/reader/full?itemId=7444020932860985881', true)
+xhr.withCredentials = true
+xhr.setRequestHeader('ismobile', '0')
+xhr.setRequestHeader('Accept', 'application/json, text/plain, */*')
+xhr.send()
+// → xhr.status = 200
+// → xhr.getResponseHeader('x-tt-zhal') = "k=DNMrHsV173Pd4pgy;f=dc027189e0ba4cd;d1=lf6-awef.bytetos.com;d2=lf3-awef.bytetos.com"
+// → xhr.responseText.length = 1362（包含密文 + 元信息，解密后正文字数 2423）
+// → content 字段已经是字体验密 JSON，跟 chrome 隔离环境抓的一字不差
+```
+
+### 不变项
+
+- 同源主路径策略：`fanqienovel.com/api/reader/full?itemId=...`（不变）
+- 字体解密：`fontDecrypt.ts` mapping 表（不变）
+- L1-L6 反封禁、设备池、缓存、Pin、节流、控制面板（不变）
+- snssdk fallback：保留（不变）
+
+### 升级步骤
+
+1. 卸载 v0.2.0
+2. 安装 `release/fanqie-assistant-v0.2.1.user.js`
+3. 打开任意章节，应能完整显示（之前看试读段的章节现在应能看完）
+4. 切换章节（约 30 s 一次）应能看到 `[fqa:reader] 字体验密 DNMrHsV173Pd4pgy` 日志
+
+### 已知风险（继承自 v0.2.0）
+
+- ⚠️ mapping 表只覆盖 3 套字体（`DNMrHsV173Pd4pgy` / `fKts9tCXDjS49UhH` / `_search`），遇未知 id 显示 ▒ 字符。F12 控制台搜 `[fqa:reader] 字体验密 <id>` 把 font-id + 章节 URL 报作者补表
+- ⚠️ `useWebSecsdkApi` 在 fanqie 上被阉过（只剩 `csrf`），不能用它显式签名——本方案靠 secsdk 的 XHR.prototype hook 自动签名
+
+---
+
 ## v0.2.0 (2026-09-21) — 章节获取路径重构（同源 + 字体验密主路径）
 
 **根因**：v0.1.x 沿用上游 v0.0.6 的 snssdk 跨域设备接口 `reading.snssdk.com/reading/reader/full/v`。该接口**设计上只返回试读段**（locked 章节 ~300 字预览），无论设备 VIP 是否到期，正文都拿不全。用户反映的"前面部分"就是这个设计限制的体现——不是 v0.1.1 退化了，是从来就没完整过。
