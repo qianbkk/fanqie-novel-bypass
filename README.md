@@ -31,11 +31,24 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 Violentmonkey。
-2. 打开 [`release/fanqie-assistant-v0.1.1.user.js`](release/fanqie-assistant-v0.1.1.user.js)，脚本管理器会自动弹出安装页。
+2. **推荐装最新** [`release/fanqie-assistant-v0.1.2.user.js`](release/fanqie-assistant-v0.1.2.user.js)（v0.1.2 含 5min 自动恢复机制，适合设备池 dead 的旧用户）。
+   - 备份 fallback：v0.1.1 在 GitHub Release [v0.1.0](https://github.com/qianbkk/fanqie-novel-bypass/releases/tag/v0.1.0)。
+   - 完整功能兜底：v0.0.6 上游原版 [`release/fanqie-assistant-v0.0.6.user.js`](release/fanqie-assistant-v0.0.6.user.js)。
 3. 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
 **首次启动**：脚本会自动注册 3 个设备，间隔 0 s / 10 s / 30 s（避免"批量注册"风控），同时激活 30 天 SVIP。详情见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的 L5 / L6。
+
+### v0.1.2 新增：设备池全 dead 自动恢复
+
+如果你的设备池 3 个槽位都被 snssdk 风控了（罕见但极端），v0.1.1 会卡在"必须手动点 ⚙️ → 重置整个池子"。**v0.1.2** 加了自动恢复：
+
+- 检测到「所有槽 dead」后自动调度 **5 分钟倒计时**重置
+- 弹窗顶部蓝色「🤖 自动恢复已启用」区块 + 倒计时秒数（每秒 tick）
+- 5 分钟后自动 reset + 注册 3 个新设备 + reload 页面
+- **24h 节流**：同 IP/fingerprint 24h 内最多自动 reset 一次（避免 snssdk 批量注册风控）
+- 用户可点「取消自动重置」主动禁用本会话的自动 reset
+- 验证报告：[verification/V012-VERIFICATION.md](verification/V012-VERIFICATION.md)（含 21/21 Node.js 单元测试断言通过）
 
 ## 文档目录
 
