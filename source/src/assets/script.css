@@ -238,3 +238,105 @@
 .reader-toolbar {
 	user-select: none;
 }
+
+/* ----------------------------- 失败恢复弹窗 ----------------------------- */
+.fqa-recovery-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 999998;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+	font-size: 14px;
+	color: #1f2329;
+}
+.fqa-recovery-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+}
+.fqa-recovery-dialog {
+	position: relative;
+	width: min(440px, 90vw);
+	max-height: 86vh;
+	overflow-y: auto;
+	background: #fff;
+	border-radius: 10px;
+	box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+	padding: 20px 22px 22px;
+	box-sizing: border-box;
+}
+.fqa-recovery-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid #eee;
+}
+.fqa-recovery-icon { font-size: 22px; }
+.fqa-recovery-title { font-weight: 600; font-size: 16px; }
+.fqa-recovery-body p.fqa-recovery-reason { margin: 0 0 14px; line-height: 1.55; color: #4a4a4a; }
+.fqa-recovery-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 14px;
+}
+.fqa-recovery-btn {
+	padding: 6px 14px;
+	border: 1px solid #d0d0d0;
+	background: #fff;
+	color: #1f2329;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 13px;
+	transition: all 0.15s;
+}
+.fqa-recovery-btn:hover { border-color: #5e8eff; color: #5e8eff; }
+.fqa-recovery-btn.primary { background: #5e8eff; color: #fff; border-color: #5e8eff; }
+.fqa-recovery-btn.primary:hover { background: #4a7af0; }
+.fqa-recovery-btn.warn { background: #fff7e6; color: #d46b08; border-color: #ffd591; }
+.fqa-recovery-btn.warn:hover { border-color: #ff7a45; }
+.fqa-recovery-btn.danger { background: #fff1f0; color: #cf1322; border-color: #ffa39e; }
+.fqa-recovery-btn.danger:hover { background: #ff7875; color: #fff; border-color: #ff7875; }
+.fqa-recovery-btn.small { padding: 4px 10px; font-size: 12px; }
+.fqa-recovery-backoff { display: flex; gap: 6px; flex-wrap: wrap; }
+.fqa-recovery-diag { margin-top: 8px; }
+.fqa-recovery-diag[open] summary { display: block; cursor: pointer; color: #888; font-size: 12px; padding: 4px 0; }
+.fqa-recovery-log {
+	max-height: 220px;
+	overflow: auto;
+	background: #1f1f1f;
+	color: #eee;
+	border-radius: 6px;
+	padding: 8px 10px;
+	font-family: "SF Mono", Consolas, monospace;
+	font-size: 11px;
+	line-height: 1.45;
+	white-space: pre-wrap;
+	margin: 0;
+}
+.fqa-recovery-diag-actions { margin-top: 8px; display: flex; gap: 6px; }
+.fqa-recovery-auto-reset {
+	margin: 0 0 14px;
+	padding: 12px 14px;
+	background: linear-gradient(135deg, #e6f7ff 0%, #f0f5ff 100%);
+	border: 1px solid #91caff;
+	border-radius: 8px;
+}
+.fqa-recovery-auto-reset-title { font-weight: 600; color: #0958d9; margin-bottom: 6px; font-size: 13px; }
+.fqa-recovery-auto-reset-body { color: #1f2329; line-height: 1.55; font-size: 13px; margin-bottom: 10px; }
+.fqa-recovery-auto-reset-body .fqa-countdown {
+	display: inline-block;
+	padding: 1px 8px;
+	background: #0958d9;
+	color: #fff;
+	border-radius: 4px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+	min-width: 32px;
+	text-align: center;
+}
+.fqa-recovery-auto-reset .fqa-recovery-btn { padding: 4px 12px; font-size: 12px; }

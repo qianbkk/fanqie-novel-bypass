@@ -1,5 +1,55 @@
 # 版本变更
 
+## v0.1.2 (2026-09-22) — 设备池自动恢复（5 分钟倒计时）
+
+**改进动机**：v0.1.1 的"不自残"设计在单设备风控下有效，但在**极端场景**（snssdk 把同 IP/fingerprint 的 3 个设备全部风控）会让用户卡在"3 个槽全 dead"状态——必须手动点 ⚙️ → "重置整个池子"才能解锁，违反"不会频繁失效"原则。
+
+**新增能力**：
+
+- **自动恢复机制**（`source/src/pool/index.ts`）
+  - 检测「所有槽位 dead」后，自动调度 5 分钟后 reset 整个池子（替代"必须用户手动"）
+  - 24h 节流：同 IP/fingerprint 24h 内最多自动 reset 一次，避免触发 snssdk 批量注册风控
+  - 持久化跨页面刷新（用 `fqa.auto_reset_plan.v1` + `fqa.last_auto_reset.v1` 两个 GM 键）
+  - 用户可手动取消（`cancelAutoReset()` 暴露）
+
+- **恢复弹窗倒计时 UI**（`source/src/panel/recovery.ts` + `src/assets/script.css`）
+  - 弹窗顶部显示蓝色「🤖 自动恢复已启用」区块，倒计时秒数（每秒 tick）
+  - 「取消自动重置」按钮（用户主动禁用本会话的自动 reset）
+  - 新增「⚠ 重置整个池子」按钮（弹窗内 1 次点击 + Enter 就能 reset，比之前需要 4 次点击 + ⚙️ popover 简单得多）
+  - 自动 reset 完成后弹窗自动 reload 页面，让 readerHook 用新设备重试
+
+- **失败恢复弹窗完整 CSS**（之前 v0.1.1 漏了 CSS，弹窗样式靠继承 + 默认——这次补齐全套样式）
+
+**用户操作流程**（目标：自动恢复 + 完整正文，无需手动）：
+
+```
+1. 用户打开任意章节 → 设备池全 dead → 恢复弹窗弹出
+2. 弹窗顶部显示蓝色「自动恢复已启用 5min 倒计时」
+3. 5 分钟后自动 reset + 注册 3 个新设备 + reload 页面
+4. readerHook 用新设备 fetch → 拿到完整正文 ≥1500 字
+```
+
+**长期稳定性**：
+- 自动 reset 触发后 24h 内不再自动 reset（snssdk 风控护栏）
+- 单槽 dead 仍走原 v0.1.1 的「手动补员 24h 冷却」逻辑（不自残）
+- 全 dead 自动恢复是最后兜底，正常情况不应触发
+
+**验证**（2026-09-22）：
+- `npm run build` 通过 tsc + vite build，0 警告 0 错误
+- bundle `release/fanqie-assistant-v0.1.2.user.js`（277.99 KB / gzip 76.34 KB）
+- SHA256：`5C30D92247BCA029D37A52ACC5C4423EB526819CCF016819A42B99900C991414`
+- bundle grep 确认所有新函数都进了产物：`AUTO_RESET_DELAY_MS` / `AUTO_RESET_THROTTLE_MS` / `detectAllDeadAndSchedule` / `getAutoResetPlan` / `cancelAutoReset` 全在
+- CSS：`fqa-recovery-auto-reset` / `fqa-countdown` / `.fqa-recovery-btn.danger` 全在
+
+**升级（推荐）**：
+- Edge 上 TM 装新版 `fanqie-assistant-v0.1.2.user.js`
+- 刷新任意章节页 → 等约 5 分钟 → 完整正文自动显示
+- （旧版 v0.1.1 仍可继续用，只是不带自动恢复）
+
+**已知未做**：浏览器自动化跨页 cross-page 验证（chrome-devtools-mcp / aardio mouse_event 在 Edge 上不稳定，前几次复现）。建议用户在真实 Edge 跑一次验收。
+
+---
+
 ## v0.2.x (2026-09-21) — 已撤回（不要装）
 
 **错误方向**：v0.2.0 / v0.2.1 完全重写 `source/src/api/content.ts`，把上游 `https://reading.snssdk.com/reading/reader/full/v`（snssdk 老接口 + 完整 SM3 签名链 + AES-CBC 解密）替换为 `https://fanqienovel.com/api/reader/full`（fanqienovel.com 同源试读段 API）。

@@ -1,11 +1,16 @@
 // 失败恢复弹窗：当设备池发生自动切换、或池子空了时弹出。
 //
-// 5 个选项（用户原始诉求）：
+// 选项（用户原始诉求）：
 //   - [立即重试]：立刻重试当前请求（5s 冷却后发）
 //   - [切换设备]：手动切到下一个 healthy 槽位
 //   - [X 秒后自动重试]：退避重试，X 可选 10/30/60/120
 //   - [查看诊断]：折叠展开诊断日志（最新 50 条）
 //   - [放弃]：关闭弹窗，标记此次会话"放弃"，下次失败仍会弹
+//
+// v0.1.2 新增自动恢复倒计时：
+//   - 全 dead 时 pool 自动调度 5min 后 reset 整个池子
+//   - 恢复弹窗显示倒计时 + "取消自动重置"按钮
+//   - 用户取消后, 当前会话不再自动 reset (页面刷新后才会重新调度)
 //
 // 设计：
 //   - 浮动居中模态，不打断阅读器 DOM
@@ -14,6 +19,7 @@
 //
 // 与 pool 模块的关系：
 //   - pool.subscribe() 订阅自动切换事件
+//   - pool.getAutoResetPlan() / pool.cancelAutoReset() / pool.subscribeAutoResetExecute() 控制自动恢复
 //   - 切换后主动查 getPoolState() 决定弹窗文案
 
 import * as pool from '../pool'
@@ -34,11 +40,36 @@ interface RecoveryContext {
 let currentContext: RecoveryContext | null = null
 let mounted = false
 let unsubPool: (() => void) | null = null
+let unsubAutoResetExecute: (() => void) | null = null
+let unsubAutoResetCancel: (() => void) | null = null
 
 export function mountRecoveryUI(): void {
     if (mounted) return
     mounted = true
     unsubPool = pool.subscribe(handlePoolChange)
+    // 自动 reset 完成后, reload 页面让 readerHook 重新跑
+    unsubAutoResetExecute = pool.subscribeAutoResetExecute(() => {
+        info('recovery', '自动 reset 已完成, 重新加载页面')
+        stopAutoResetCountdown()
+        removeModal()
+        currentContext = null
+        location.reload()
+    })
+    // 自动 reset 被取消后, 如果当前弹窗还开着就刷新一下 (移除倒计时区块)
+    unsubAutoResetCancel = pool.subscribeAutoResetCancel(() => {
+        info('recovery', '自动 reset 被取消, 移除倒计时区块')
+        const modal = document.getElementById(MODAL_ID)
+        if (modal) {
+            const block = modal.querySelector('#fqa-recovery-auto-reset')
+            if (block) block.remove()
+        }
+        stopAutoResetCountdown()
+    })
+    // 检查持久化的自动 reset 计划 (页面刷新后保留)
+    const plan = pool.getAutoResetPlan()
+    if (plan) {
+        info('recovery', `检测到持久化的自动 reset 计划, 剩余 ${Math.round((plan.plannedAt - Date.now()) / 1000)}s`)
+    }
     info('recovery', '恢复弹窗模块已挂载')
 }
 
@@ -48,6 +79,14 @@ export function unmountRecoveryUI(): void {
     if (unsubPool) {
         unsubPool()
         unsubPool = null
+    }
+    if (unsubAutoResetExecute) {
+        unsubAutoResetExecute()
+        unsubAutoResetExecute = null
+    }
+    if (unsubAutoResetCancel) {
+        unsubAutoResetCancel()
+        unsubAutoResetCancel = null
     }
     removeModal()
     currentContext = null
@@ -99,6 +138,10 @@ function showModal(ctx: RecoveryContext): void {
     modal.innerHTML = renderModalHTML(ctx)
     document.body.appendChild(modal)
     bindActions(modal)
+    // 如果显示了自动重置倒计时, 启动 tick
+    if (pool.getAutoResetPlan()) {
+        startAutoResetCountdown(modal)
+    }
     info('recovery', '弹出失败恢复提示', { reason: ctx.reason })
 }
 
@@ -113,6 +156,18 @@ function contextsEqual(a: Reason, b: Reason): boolean {
 
 function renderModalHTML(ctx: RecoveryContext): string {
     const reasonText = renderReason(ctx.reason)
+    const autoReset = pool.getAutoResetPlan()
+    const autoResetBlock = autoReset
+        ? `<div class="fqa-recovery-auto-reset" id="fqa-recovery-auto-reset">
+                <div class="fqa-recovery-auto-reset-title">🤖 自动恢复已启用</div>
+                <div class="fqa-recovery-auto-reset-body">
+                    检测到所有设备 dead, 系统将在
+                    <strong id="fqa-auto-reset-countdown" class="fqa-countdown">--</strong>
+                    秒后自动重置整个设备池并重新注册 3 个新设备。
+                </div>
+                <button data-action="cancel_auto_reset" class="fqa-recovery-btn">取消自动重置</button>
+            </div>`
+        : ''
     return `
         <div class="fqa-recovery-backdrop">
             <div class="fqa-recovery-dialog" role="dialog" aria-modal="true">
@@ -122,6 +177,7 @@ function renderModalHTML(ctx: RecoveryContext): string {
                 </div>
                 <div class="fqa-recovery-body">
                     <p class="fqa-recovery-reason">${reasonText}</p>
+                    ${autoResetBlock}
                     <div class="fqa-recovery-actions">
                         <button data-action="retry_now" class="fqa-recovery-btn primary">立即重试</button>
                         <button data-action="manual_switch" class="fqa-recovery-btn">切换设备</button>
@@ -132,6 +188,7 @@ function renderModalHTML(ctx: RecoveryContext): string {
                             <button data-action="backoff" data-seconds="120" class="fqa-recovery-btn small">120s 后重试</button>
                         </div>
                         <button data-action="diagnostic" class="fqa-recovery-btn">查看诊断 ▼</button>
+                        <button data-action="reset_pool" class="fqa-recovery-btn danger">⚠ 重置整个池子</button>
                         <button data-action="giveup" class="fqa-recovery-btn warn">放弃本次</button>
                     </div>
                     <details class="fqa-recovery-diag" id="fqa-recovery-diag">
@@ -182,6 +239,12 @@ function bindActions(modal: HTMLElement): void {
             case 'copy_log':
                 copyLogToClipboard()
                 break
+            case 'reset_pool':
+                handleResetPool(modal)
+                break
+            case 'cancel_auto_reset':
+                handleCancelAutoReset(modal)
+                break
             case 'giveup':
                 handleGiveup()
                 break
@@ -189,6 +252,62 @@ function bindActions(modal: HTMLElement): void {
     })
     // 自动展开诊断区（用户偏好：可展开看到日志）
     requestAnimationFrame(() => toggleDiagnostic(modal))
+}
+
+let autoResetTickTimer: ReturnType<typeof setInterval> | null = null
+
+function startAutoResetCountdown(modal: HTMLElement): void {
+    stopAutoResetCountdown()
+    const tick = () => {
+        const plan = pool.getAutoResetPlan()
+        const el = modal.querySelector<HTMLElement>('#fqa-auto-reset-countdown')
+        if (!el) {
+            stopAutoResetCountdown()
+            return
+        }
+        if (!plan) {
+            el.textContent = '--'
+            stopAutoResetCountdown()
+            return
+        }
+        const remainingSec = Math.max(0, Math.round((plan.plannedAt - Date.now()) / 1000))
+        el.textContent = String(remainingSec)
+        if (remainingSec <= 0) {
+            stopAutoResetCountdown()
+        }
+    }
+    tick()
+    autoResetTickTimer = setInterval(tick, 1000)
+}
+
+function stopAutoResetCountdown(): void {
+    if (autoResetTickTimer) {
+        clearInterval(autoResetTickTimer)
+        autoResetTickTimer = null
+    }
+}
+
+function handleResetPool(_modal: HTMLElement): void {
+    info('recovery', '用户从恢复弹窗触发：重置整个池子')
+    if (!confirm('重置整个池子会清空所有 3 个设备 ID 并重新注册。继续？')) return
+    stopAutoResetCountdown()
+    removeModal()
+    currentContext = null
+    void pool.resetPool().then(() => {
+        info('recovery', '重置完成, 重新加载页面让 readerHook 重试')
+        location.reload()
+    })
+}
+
+function handleCancelAutoReset(modal: HTMLElement): void {
+    const ok = pool.cancelAutoReset()
+    if (ok) {
+        info('recovery', '用户取消了自动重置')
+        // 移除自动重置区块
+        const block = modal.querySelector('#fqa-recovery-auto-reset')
+        if (block) block.remove()
+        stopAutoResetCountdown()
+    }
 }
 
 function handleRetryNow(): void {
