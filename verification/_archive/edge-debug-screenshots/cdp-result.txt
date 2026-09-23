@@ -1,0 +1,1 @@
+﻿{"id":2,"result":{"result":{"type":"string","value":"{\"readerLen\":151,\"fqaLen\":0,\"hasGear\":false,\"hasFqa\":false}"}}}

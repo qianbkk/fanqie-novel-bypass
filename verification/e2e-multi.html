@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head><title>e2e</title></head>
+<body>
+<pre id="out"></pre>
+<script>
+// === GM mock + Vue/moment stub ===
+const __gmStore = {};
+window.GM_xmlhttpRequest = (opts) => new Promise((resolve, reject) => {
+  const headers = { ...(opts.headers || {}) };
+  delete headers['Host'];
+  delete headers['Content-Length'];
+  delete headers['Accept-Encoding'];
+  const fetchOpts = { method: opts.method || 'GET', headers, credentials: 'omit', mode: 'cors' };
+  if (opts.responseType === 'arraybuffer') fetchOpts.headers['Accept'] = '*/*';
+  if (opts.data) fetchOpts.body = opts.data;
+  fetch(opts.url, fetchOpts).then(async (r) => {
+    const buf = await r.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let text = '';
+    for (let i = 0; i < bytes.length; i++) text += String.fromCharCode(bytes[i]);
+    const b64 = btoa(text);
+    resolve({ status: r.status, statusText: r.statusText, responseHeaders: r.headers.get('content-type'), response: text, responseText: text, responseBase64: b64, finalUrl: r.url, readyState: 4 });
+  }, reject);
+});
+window.GM_getValue = (k, def) => k in __gmStore ? __gmStore[k] : def;
+window.GM_setValue = (k, v) => { __gmStore[k] = v; };
+window.GM_deleteValue = (k) => { delete __gmStore[k]; };
+window.GM_addStyle = (css) => { const s = document.createElement('style'); s.textContent = css; (document.head || document.documentElement).appendChild(s); };
+window.unsafeWindow = window;
+const makeStub = (name) => new Proxy(function(){return makeStub(name);}, {
+  get: (t, p) => {
+    if (p === 'reactive') return (o) => o;
+    if (p === 'ref') return (v) => ({ value: v });
+    if (p === 'watch') return () => {};
+    if (p === 'defineComponent') return (c) => c;
+    if (p === 'openBlock') return () => {};
+    if (p === 'createElementBlock') return () => document.createElement('div');
+    if (p === 'createTextVNode') return () => document.createTextNode('');
+    if (p === 'withModifiers') return (fn) => fn;
+    if (p === 'toRefs') return (o) => o;
+    if (p === 'computed') return (fn) => ({ value: fn() });
+    if (p === 'inject') return () => ({});
+    if (p === 'provide') return () => {};
+    if (p === 'nextTick') return (fn) => Promise.resolve().then(fn);
+    return makeStub(name);
+  },
+  apply: (t, thisArg, args) => makeStub(name)
+});
+window.Vue = makeStub('Vue');
+window.moment = makeStub('moment');
+</script>
+<script>
+function log(s) {
+  const el = document.getElementById('out');
+  if (el) el.textContent += s + "\n";
+  console.log(s);
+}
+async function main() {
+  try {
+    // Fetch user.js tail (defines registerDevice, registerKey, signRequest, decryptChapter, exposes window.__fqa)
+    log('[0] Fetching user.js tail...');
+    const tailRes = await fetch('http://127.0.0.1:8765/init-script-tail.js');
+    const tailCode = await tailRes.text();
+    log('[0] Tail loaded: ' + tailCode.length + ' chars, status=' + tailRes.status);
+    // Execute tail in page context
+    const s = document.createElement('script');
+    s.textContent = tailCode;
+    document.head.appendChild(s);
+    log('[0] Tail executed');
+
+    // Wait for window.__fqa
+    let tries = 0;
+    while (!window.__fqa && tries < 30) {
+      await new Promise(r => setTimeout(r, 100));
+      tries++;
+    }
+    if (!window.__fqa) { log('[!] window.__fqa not defined after 3s'); return; }
+    log('[OK] window.__fqa exposed: ' + Object.keys(window.__fqa).join(','));
+
+    const { registerDevice, signRequest, registerKey, decryptChapter, defaultUnidbgConfig } = window.__fqa;
+    if (!defaultUnidbgConfig) { log('[!] defaultUnidbgConfig missing'); return; }
+
+    // 1. Register new device
+    const t0 = performance.now();
+    const device = await registerDevice();
+    log('[1] Registered: ' + JSON.stringify(device) + ' (' + (performance.now()-t0).toFixed(0) + 'ms)');
+
+    // 2. Register key
+    const t1 = performance.now();
+    const key = await registerKey(device);
+    log('[2] Key ver=' + key.keyver + ' (' + (performance.now()-t1).toFixed(0) + 'ms)');
+
+    // 3. Read 4 chapters
+    const chapters = [
+      { id: '7431911046148801086', name: 'Ch100' },
+      { id: '7445246192578986520', name: 'Ch190' },
+      { id: '7503749943413195288', name: 'Ch500' },
+      { id: '7593942749645111832', name: 'Ch981' }
+    ];
+    for (const ch of chapters) {
+      const u0 = performance.now();
+      const url = 'https://reading.snssdk.com/reader/full/v?device_id=' + device.device_id +
+        '&iid=' + device.install_id +
+        '&device_type=' + device.device_type +
+        '&aid=1967&app_name=novelapp&channel=alpha' +
+        '&device_platform=android&os_version=33&version_code=63932' +
+        '&book_id=7415383954984815641' +
+        '&item_id=' + ch.id +
+        '&need_pay=0&from=0&fetch_type=0&chapter_type=0' +
+        '&count=10&screen_height=1280&screen_width=720' +
+        '&aid_pay_status=0&need_recommend=1&base=16' +
+        '&ad_user_origin=0&isN=false&support_sse2=true' +
+        '&client_type=0&night=0&platform=2&offset=0&region=';
+      try {
+        const headers = await signRequest(url, '');
+        // Manually build request via GM_xmlhttpRequest
+        const r = await window.GM_xmlhttpRequest({ method: 'GET', url, headers, anonymous: true, responseType: 'text' });
+        if (r.status !== 200) { log('[!] ' + ch.name + ' HTTP ' + r.status); continue; }
+        const json = JSON.parse(r.responseText);
+        const enc = json.data && json.data.content;
+        if (!enc) { log('[!] ' + ch.name + ' no content: ' + r.responseText.substring(0, 200)); continue; }
+        const decrypted = await decryptChapter(enc, '', defaultUnidbgConfig);
+        const ms = (performance.now() - u0).toFixed(0);
+        const statusEmoji = decrypted.length >= 1500 ? 'OK' : 'WARN';
+        log('[' + statusEmoji + '] ' + ch.name + ' (' + ch.id + ') : ' + decrypted.length + ' chars in ' + ms + 'ms');
+        log('       Preview: ' + decrypted.substring(0, 80).replace(/\n/g, '\\n') + '...');
+      } catch (e) {
+        log('[ERR] ' + ch.name + ': ' + e.message);
+      }
+    }
+  } catch (e) {
+    log('[ERR] ' + e.message + '\n' + e.stack);
+  }
+}
+main();
+</script>
+</body>
+</html>
