@@ -17,9 +17,10 @@ export async function encryptKeyinfoBody(config: DeviceConfig): Promise<string> 
     const data = new Uint8Array(unhex(reverseHex(deviceId))).slice(0, 8);
     console.log(data)
     const subtle = getSubtle();
+    // v0.1.3: 同 decryptKeyinfoResponse, 用 Uint8Array view 兼容 wrapped crypto
     const k = await subtle.importKey(
         "raw",
-        shared_key,
+        new Uint8Array(shared_key),
         { name: "AES-CBC" },
         false,
         ["encrypt"],
@@ -45,9 +46,11 @@ export async function decryptKeyinfoResponse(encrypted: string): Promise<ArrayBu
     const iv = buf.slice(0, 16);
     const data = buf.slice(16);
     const subtle = getSubtle();
+    // v0.1.3 修复: shared_key 在某些 wrapper crypto (TM/SecureSDK) 下传 ArrayBuffer 会报
+    // "Key data must be a BufferSource for non-JWK formats". 改用 Uint8Array view 避开
     const k = await subtle.importKey(
         "raw",
-        shared_key,
+        new Uint8Array(shared_key),
         { name: "AES-CBC" },
         false,
         ["decrypt"]

@@ -1,5 +1,58 @@
 # 版本变更
 
+## v0.1.3 (2026-09-23) — BufferSource 修复 + 自动恢复显式触发
+
+**改进动机**：v0.1.2 在用户真实 Edge 跑起来后报告"章节字数为 0 / 加载失败"。诊断日志 `fqa.diagnostic_log` 记录了关键错误：
+
+```
+snssdk 路径也失败
+Failed to execute 'importKey' on 'SubtleCrypto':
+Key data must be a BufferSource for non-JWK formats
+```
+
+这是 Chrome 86+ / Edge Chromium WebCrypto 标准行为：`importKey('raw', keyData, ...)` 在 keyData 是 `ArrayBuffer` 时会拒绝（实际实现要求 `BufferSource` 是 `TypedArray` 视图，不是裸 `ArrayBuffer`）。
+
+**修复**（`source/src/crypto/registerkey.ts` + `source/src/crypto/content.ts`）：
+
+```diff
+- subtle.importKey("raw", shared_key, ...)
++ subtle.importKey("raw", new Uint8Array(shared_key), ...)
+```
+
+**为什么这样改**：`Uint8Array(shared_key)` 创建的是**视图**，不复制内存，但绕开 Chrome/Edge 对裸 ArrayBuffer 的严格检查。minimal-risk 修复，不改 shared_key 的类型（避免影响调用方）。
+
+**自动恢复显式触发**（`source/src/main.ts`）：
+
+v0.1.2 在 `mainInit` 中只调 `pool.initPool()`，但 `detectAllDeadAndSchedule` 的触发依赖 `pool.subscribe` 监听 `recordFailure` 事件。在某些边缘场景（如 init 时直接发现池子全 dead）事件可能没触发。v0.1.3 在 init 后立即检查池状态并显式调用 `notifyFailure()`：
+
+```ts
+await pool.initPool();
+const stats = await pool.getStats();
+if (stats.dead >= stats.total && stats.total > 0) {
+    pool.notifyFailure();  // 强制触发恢复弹窗
+}
+```
+
+**验证**（2026-09-23，详见 `verification/V013-VERIFICATION.md`）：
+
+- `verification/chrome-cdp-v013-encrypt.py` Test C side-by-side 对比：
+  ```json
+  { "v012": "BLOCKED: Key data must be a BufferSource",
+    "v013": "OK" }
+  ```
+- `verification/chrome-cdp-v013-crypto.py` Test 1+2 验证 Chrome native + wrapped crypto 都接受 Uint8Array 视图
+- `verification/chrome-cdp-v013.py` v0.1.3 release 注入 Chrome 沙箱，启动正常（logger/main/recovery/panel/pool/cache 全挂载），**无 BufferSource 错误**
+
+**bundle**：
+- `release/fanqie-assistant-v0.1.3.user.js`（278,583 字节 / gzip 76.7 KB）
+- SHA256：`82EF32EB14067FB67CDF9F5F0A2974E5FE6EF403855D83255BD8770CA7F7878E`
+
+**升级**：TM 装 v0.1.3 → Ctrl+F5 刷新 → ⚙️ 控制面板 → 「⚠ 重置整个池子」→ Enter → 等新设备注册成功 → 跳任意章节验证完整正文。
+
+**已知未做**：真实 Edge 用户验收（自动化 Edge debug 端口起不来）。建议用户在 Edge 上跑一次端到端。
+
+---
+
 ## v0.1.2 (2026-09-22) — 设备池自动恢复（5 分钟倒计时）
 
 **改进动机**：v0.1.1 的"不自残"设计在单设备风控下有效，但在**极端场景**（snssdk 把同 IP/fingerprint 的 3 个设备全部风控）会让用户卡在"3 个槽全 dead"状态——必须手动点 ⚙️ → "重置整个池子"才能解锁，违反"不会频繁失效"原则。

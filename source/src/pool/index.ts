@@ -522,6 +522,7 @@ function detectAllDeadAndSchedule(): void {
         debug('pool', '24h 内已自动 reset 过, 不重复调度')
         return
     }
+    info('pool', '全 dead 状态检测到, 调度 5min 后自动 reset 整个池子')
     scheduleAutoResetInternal(AUTO_RESET_DELAY_MS, Date.now())
 }
 

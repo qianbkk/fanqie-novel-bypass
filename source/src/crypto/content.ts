@@ -20,9 +20,12 @@ export async function decryptChapter(
         throw new Error("Missing decrypt key")
     }
     const subtle = getSubtle();
+    // v0.1.3: 同 registerkey, 用 Uint8Array view 兼容 wrapped crypto (TM/SecureSDK)
+    // raw 格式严格要求 BufferSource (ArrayBuffer | TypedArray), 但某些 wrapper 把 ArrayBuffer
+    // 当作普通对象拒绝, 报 "Key data must be a BufferSource". Uint8Array 视图始终有效
     const cryptoKey = await subtle.importKey(
         "raw",
-        key,
+        new Uint8Array(key),
         { name: "AES-CBC" },
         false,
         ["decrypt"],

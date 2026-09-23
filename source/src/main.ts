@@ -22,9 +22,9 @@ import { version, name } from '../package.json'
 
 import { initLogger, info } from './utils/logger'
 import { initCache } from './cache'
-import { initPool } from './pool'
+import * as pool from './pool'
 import { mountPanel, ensurePanelButton } from './panel'
-import { mountRecoveryUI } from './panel/recovery'
+import { mountRecoveryUI, notifyFailure } from './panel/recovery'
 
 const win = unsafeWindow
 
@@ -88,8 +88,23 @@ async function mainInit() {
     // 8. 异步初始化：缓存 + 设备池（并行）
     await Promise.allSettled([
         initCache().catch((e) => console.error('[fqa:main] initCache failed:', e)),
-        initPool().catch((e) => console.error('[fqa:main] initPool failed:', e)),
+        pool.initPool().catch((e) => console.error('[fqa:main] initPool failed:', e)),
     ])
+
+    // v0.1.3: 主动检查池状态, 如果 initPool 完成后所有槽位 dead
+    // 显式触发恢复弹窗 (防止 pool.subscribe() 漏触发)
+    try {
+        const state = pool.getPoolState()
+        if (state.slots.length > 0 && state.slots.every((s) => s.health === 'dead')) {
+            const healthyCount = state.slots.filter((s) => s.health === 'healthy').length
+            if (healthyCount === 0) {
+                info('main', 'initPool 后池子全 dead, 显式触发恢复弹窗')
+                notifyFailure()
+            }
+        }
+    } catch (e) {
+        console.warn('[fqa:main] 自愈检查失败:', e)
+    }
 
     // 9. load 钩子（页面已有内容时触发）+ 自愈检查
     void onLoad()
