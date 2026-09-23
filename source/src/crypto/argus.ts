@@ -124,14 +124,15 @@ export async function getArgus(
     plaintext.set(HIGH_RAND, header.length + data.length);
 
     const subtle = getSubtle();
+    // v0.1.4: md5bytes 返回 ArrayBuffer, wrapped crypto (TM/SecureSDK) 会拒; 包 Uint8Array view
     const aesKey = await subtle.importKey(
         "raw",
-        await hash.md5bytes(signKey.slice(0, 16)),
+        new Uint8Array(await hash.md5bytes(signKey.slice(0, 16))),
         { name: "AES-CBC" },
         false,
         ["encrypt"],
     );
-    const iv = await hash.md5bytes(signKey.slice(16));
+    const iv = new Uint8Array(await hash.md5bytes(signKey.slice(16)));
     const ciphertext = new Uint8Array(
         await subtle.encrypt({ name: "AES-CBC", iv }, aesKey, plaintext),
     );

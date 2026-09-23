@@ -14,13 +14,14 @@ export async function encrypt(data: ArrayBuffer): Promise<ArrayBuffer> {
         concatArrayBuffers(await hash.sha512bytes(randomBytes), FIXED_STRING)
     )
     const k = hashValue.slice(0, 16)
-    const iv = hashValue.slice(16, 32)
+    const iv = new Uint8Array(hashValue.slice(16, 32))
     const compressedData = await gzip(data)
     const hashedData = concatArrayBuffers(
         await hash.sha512bytes(compressedData),
         compressedData
     )
-    const key = await subtle.importKey("raw", k, { name: "AES-CBC", length: 128 }, false, ["encrypt"])
+    // v0.1.4: k 是 ArrayBuffer.slice(), wrapped crypto 会拒; 包 Uint8Array view
+    const key = await subtle.importKey("raw", new Uint8Array(k), { name: "AES-CBC", length: 128 }, false, ["encrypt"])
     const encryptedData = await subtle.encrypt({ name: "AES-CBC", iv }, key, hashedData)
     return concatArrayBuffers(
         new Uint8Array([116, 99, 5, 16, 0, 0]).buffer,

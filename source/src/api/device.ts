@@ -167,7 +167,8 @@ export async function registerKey(device: RegisteredDevice): Promise<KeyInfo> {
 
     const subtle = getSubtle()
     const iv = getCrypto().getRandomValues(new Uint8Array(16))
-    const key = await subtle.importKey('raw', shared_key, { name: 'AES-CBC' }, false, ['encrypt'])
+    // v0.1.4: 同 registerkey.ts, 用 Uint8Array view 兼容 wrapped crypto (TM/SecureSDK)
+    const key = await subtle.importKey('raw', new Uint8Array(shared_key), { name: 'AES-CBC' }, false, ['encrypt'])
     const encrypted = new Uint8Array(
         await subtle.encrypt({ name: 'AES-CBC', iv }, key, idBytes),
     )
@@ -205,8 +206,9 @@ export async function registerKey(device: RegisteredDevice): Promise<KeyInfo> {
 
     // 响应里的密钥同样是 IV(16) + 密文，用静态密钥解开
     const buf = b64decode(encryptedKey)
+    // v0.1.4: 同 registerkey.ts, Uint8Array view 兼容 wrapped crypto
     const decryptKey = await subtle.importKey(
-        'raw', shared_key, { name: 'AES-CBC' }, false, ['decrypt'],
+        'raw', new Uint8Array(shared_key), { name: 'AES-CBC' }, false, ['decrypt'],
     )
     const finalKey = await subtle.decrypt(
         { name: 'AES-CBC', iv: buf.slice(0, 16) },
