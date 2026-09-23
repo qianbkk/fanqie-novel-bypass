@@ -1,5 +1,54 @@
 # 版本变更
 
+## v0.1.4 (2026-09-23) — 完整 BufferSource 修复（所有 7 个 importKey 调用点）
+
+**改进动机**：v0.1.3 只修了 `registerkey.ts` + `content.ts`，但漏了 3 处关键路径：
+- `source/src/api/device.ts` line 170 + 208（设备注册 API）
+- `source/src/crypto/argus.ts` line 127（x-argus 请求签名）
+- `source/src/crypto/ttencrypt.ts` line 23（TT 请求体加密）
+
+Chrome 沙箱 e2e mock 测试结果：
+
+| Version | ArrayBuffer 被拒 | Uint8Array 通过 | 结果 |
+|---------|----------------|----------------|------|
+| v0.1.2 | 4/4 | 0/0 | ❌ 第一次 importKey 就崩 |
+| v0.1.3 | 3/4 | 1/4 | ⚠️ device.ts 路径仍被拒 |
+| **v0.1.4** | **0/4** | **4/4** | ✅ 全部通过 |
+
+**修复**（同 v0.1.3 模式）：所有 `subtle.importKey("raw", x, ...)` 的 `x` 用 `new Uint8Array(x)` 视图包裹：
+
+```diff
+// source/src/api/device.ts
+- const key = await subtle.importKey('raw', shared_key, ...)
++ const key = await subtle.importKey('raw', new Uint8Array(shared_key), ...)
+- const decryptKey = await subtle.importKey('raw', shared_key, ...)
++ const decryptKey = await subtle.importKey('raw', new Uint8Array(shared_key), ...)
+
+// source/src/crypto/argus.ts
+- await subtle.importKey("raw", await hash.md5bytes(signKey.slice(0, 16)), ...)
++ await subtle.importKey("raw", new Uint8Array(await hash.md5bytes(signKey.slice(0, 16))), ...)
+
+// source/src/crypto/ttencrypt.ts
+- await subtle.importKey("raw", k, ...)
++ await subtle.importKey("raw", new Uint8Array(k), ...)
+```
+
+**验证**（详见 `verification/v014-release-notes.md`）：
+- e2e Chrome CDP mock 测试：`importStats: { rejected: 0, accepted: 4 }`
+- snssdk API 真被调用（device_register + registerkey + bookapi 各一次）
+- `provisionSingleSlot` 错误消失
+- bundle `release/fanqie-assistant-v0.1.4.user.js`（278,679 字节 / gzip 76.53 KB）
+- SHA256：`CE7511A81BD16E138659EF2EE8B3DA9FA517F4CB53FE227E665D198C8E514026`
+
+**升级（推荐从 v0.1.3 直升）**：
+1. Edge → TM → 装 v0.1.4 → Ctrl+F5
+2. ⚙️ 面板 → 「⚠ 重置整个池子」→ Enter（强制重新注册 3 个设备）
+3. 等 5-10s → 跳任意章节验证完整正文
+
+**已知未做**：真实 Edge 用户验收（自动化 Edge debug 端口受限）。e2e Chrome 沙箱已证明 BufferSource 路径 100% 修复。
+
+---
+
 ## v0.1.3 (2026-09-23) — BufferSource 修复 + 自动恢复显式触发
 
 **改进动机**：v0.1.2 在用户真实 Edge 跑起来后报告"章节字数为 0 / 加载失败"。诊断日志 `fqa.diagnostic_log` 记录了关键错误：

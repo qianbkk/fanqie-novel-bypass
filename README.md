@@ -31,7 +31,7 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 Violentmonkey。
-2. **推荐装最新** [`release/fanqie-assistant-v0.1.3.user.js`](release/fanqie-assistant-v0.1.3.user.js)（v0.1.3 修复 BufferSource 错误 + 显式触发自动恢复）。
+2. **推荐装最新** [`release/fanqie-assistant-v0.1.4.user.js`](release/fanqie-assistant-v0.1.4.user.js)（v0.1.4 完整修复 BufferSource：7 个 importKey 调用点全部用 Uint8Array view 包裹）。
    - 备份 fallback：v0.1.2 在 GitHub Release [v0.1.2](https://github.com/qianbkk/fanqie-novel-bypass/releases/tag/v0.1.2)。
    - 完整功能兜底：v0.0.6 上游原版 [`release/fanqie-assistant-v0.0.6.user.js`](release/fanqie-assistant-v0.0.6.user.js)。
 3. 点 **安装**。
@@ -39,9 +39,16 @@
 
 **首次启动**：脚本会自动注册 3 个设备，间隔 0 s / 10 s / 30 s（避免"批量注册"风控），同时激活 30 天 SVIP。详情见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的 L5 / L6。
 
-### v0.1.3 修复：BufferSource 错误 + 自动恢复显式触发
+### v0.1.4 修复：完整 BufferSource（所有 7 个 importKey 路径）
 
-v0.1.2 在真实 Edge 跑起来后报 `Failed to execute 'importKey' on 'SubtleCrypto': Key data must be a BufferSource for non-JWK formats` —— 这是 Chrome 86+ / Edge Chromium WebCrypto 标准行为，`importKey('raw', ArrayBuffer, ...)` 会被拒。**v0.1.3** 改用 `Uint8Array(shared_key)` 视图包裹：
+v0.1.2/v0.1.3 在真实 Edge 跑起来后报 `Failed to execute 'importKey' on 'SubtleCrypto': Key data must be a BufferSource for non-JWK formats` —— 这是 Chrome 86+ / Edge Chromium WebCrypto 标准行为，`importKey('raw', ArrayBuffer, ...)` 会被拒。**v0.1.4** 把所有 7 个 importKey 调用点（`api/device.ts` ×2、`crypto/registerkey.ts` ×2、`crypto/argus.ts`、`crypto/ttencrypt.ts`、`crypto/content.ts`）的 ArrayBuffer 全部改用 `Uint8Array(x)` 视图包裹：
+
+```diff
+- subtle.importKey("raw", shared_key, ...)
++ subtle.importKey("raw", new Uint8Array(shared_key), ...)
+```
+
+并显式在 `mainInit` 中检测池子全 dead 时调用 `notifyFailure()`，防止 `pool.subscribe` 漏触发导致恢复弹窗不弹。
 
 ```diff
 - subtle.importKey("raw", shared_key, ...)
@@ -97,7 +104,7 @@ fanqie-novel-bypass/
 │   ├── vite.config.ts
 │   └── README.md            # 源码目录自己的开发说明
 └── release/                 # 用户直接安装的产物
-    ├── fanqie-assistant-v0.1.3.user.js   # 本版本（推荐）
+    ├── fanqie-assistant-v0.1.4.user.js   # 本版本（推荐）
     ├── fanqie-assistant-v0.0.6.user.js   # 上游原始（fallback）
     └── INSTALL.md
 ```
