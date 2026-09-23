@@ -31,13 +31,26 @@
 ## 安装
 
 1. 安装 [Tampermonkey](https://www.tampermonkey.net/)（Chrome / Edge / Firefox）或 Violentmonkey。
-2. **推荐装最新** [`release/fanqie-assistant-v0.1.2.user.js`](release/fanqie-assistant-v0.1.2.user.js)（v0.1.2 含 5min 自动恢复机制，适合设备池 dead 的旧用户）。
-   - 备份 fallback：v0.1.1 在 GitHub Release [v0.1.0](https://github.com/qianbkk/fanqie-novel-bypass/releases/tag/v0.1.0)。
+2. **推荐装最新** [`release/fanqie-assistant-v0.1.3.user.js`](release/fanqie-assistant-v0.1.3.user.js)（v0.1.3 修复 BufferSource 错误 + 显式触发自动恢复）。
+   - 备份 fallback：v0.1.2 在 GitHub Release [v0.1.2](https://github.com/qianbkk/fanqie-novel-bypass/releases/tag/v0.1.2)。
    - 完整功能兜底：v0.0.6 上游原版 [`release/fanqie-assistant-v0.0.6.user.js`](release/fanqie-assistant-v0.0.6.user.js)。
 3. 点 **安装**。
 4. 访问任意 `https://fanqienovel.com/reader/<item_id>` 章节页。
 
 **首次启动**：脚本会自动注册 3 个设备，间隔 0 s / 10 s / 30 s（避免"批量注册"风控），同时激活 30 天 SVIP。详情见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) 的 L5 / L6。
+
+### v0.1.3 修复：BufferSource 错误 + 自动恢复显式触发
+
+v0.1.2 在真实 Edge 跑起来后报 `Failed to execute 'importKey' on 'SubtleCrypto': Key data must be a BufferSource for non-JWK formats` —— 这是 Chrome 86+ / Edge Chromium WebCrypto 标准行为，`importKey('raw', ArrayBuffer, ...)` 会被拒。**v0.1.3** 改用 `Uint8Array(shared_key)` 视图包裹：
+
+```diff
+- subtle.importKey("raw", shared_key, ...)
++ subtle.importKey("raw", new Uint8Array(shared_key), ...)
+```
+
+并显式在 `mainInit` 中检测池子全 dead 时调用 `notifyFailure()`，防止 `pool.subscribe` 漏触发导致恢复弹窗不弹。
+
+- 验证报告：[verification/V013-VERIFICATION.md](verification/V013-VERIFICATION.md)（Chrome CDP side-by-side 对比：v0.1.2 BLOCKED / v0.1.3 OK）
 
 ### v0.1.2 新增：设备池全 dead 自动恢复
 
@@ -84,7 +97,7 @@ fanqie-novel-bypass/
 │   ├── vite.config.ts
 │   └── README.md            # 源码目录自己的开发说明
 └── release/                 # 用户直接安装的产物
-    ├── fanqie-assistant-v0.1.1.user.js   # 本版本（推荐）
+    ├── fanqie-assistant-v0.1.3.user.js   # 本版本（推荐）
     ├── fanqie-assistant-v0.0.6.user.js   # 上游原始（fallback）
     └── INSTALL.md
 ```
